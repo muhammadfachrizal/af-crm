@@ -10,6 +10,7 @@ use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\OrganizationController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\PersonController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\ProductController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\QuoteController;
+use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\AttendanceController;
 
 /*
  * Laravel CRM API routes (v2).
@@ -34,6 +35,15 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team'])->group(fu
     Route::apiResource('leads', LeadController::class)
         ->names('laravel-crm.api.v2.leads')
         ->scoped(['lead' => 'external_id']);
+
+    Route::get('attendances/today', [AttendanceController::class, 'today'])
+    ->name('laravel-crm.api.v2.attendances.today');
+
+    Route::apiResource('attendances', AttendanceController::class)
+    ->except(['update'])
+    ->names('laravel-crm.api.v2.attendances')
+    ->scoped(['attendance' => 'external_id']);
+
 
     Route::apiResource('products', ProductController::class)
         ->names('laravel-crm.api.v2.products')

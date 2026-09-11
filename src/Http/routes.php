@@ -26,6 +26,15 @@ Route::get('dashboard', 'VentureDrake\LaravelCrm\Http\Controllers\DashboardContr
     ->middleware('auth.laravel-crm')
     ->name('laravel-crm.dashboard');
 
+/* Attendances */
+
+Route::group(['prefix' => 'attendances', 'middleware' => 'auth.laravel-crm'], function () {
+    Route::get('', 'VentureDrake\LaravelCrm\Http\Controllers\AttendanceController@index')
+        ->name('laravel-crm.attendances.index')
+        ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
+});
+
+
 /* Email Campaigns */
 
 Route::group(['prefix' => 'email-campaigns', 'middleware' => 'auth.laravel-crm'], function () {

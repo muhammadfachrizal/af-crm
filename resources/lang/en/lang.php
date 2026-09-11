@@ -400,6 +400,12 @@ return [
     'tasks' => 'tasks',
     'due' => 'Due',
     'planned' => 'planned',
+    'attendance' => 'attendance',
+    'attendances' => 'attendances',
+    'check_in' => 'check in',
+    'check_out' => 'check out',
+    'location' => 'location',
+    'photo' => 'photo',
 
     // Chat
     'chat' => 'chat',
