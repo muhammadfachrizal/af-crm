@@ -5,12 +5,13 @@
     {{-- HEADER --}}
     <x-mary-header title="{{ ucfirst(__('laravel-crm::lang.import_users')) }}" class="mb-5" progress-indicator>
         <x-slot:actions>
-            <x-mary-button
-                label="{{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}"
-                link="{{ url(route('laravel-crm.users.import.sample')) }}"
-                icon="o-arrow-down-tray"
-                class="btn-sm btn-outline"
-                responsive />
+                <a
+                    href="{{ route('laravel-crm.users.import.sample') }}"
+                    class="btn btn-sm btn-outline"
+                >
+                    <x-bx-download class="w-4 h-4" />
+                    {{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}
+                </a>
             <x-mary-button
                 label="{{ ucfirst(__('laravel-crm::lang.back_to_users')) }}"
                 link="{{ url(route('laravel-crm.users.index')) }}"
@@ -216,11 +217,13 @@
                         </ul>
                         <p class="mt-2 text-xs opacity-70">{{ __('laravel-crm::lang.import_password_note') }}</p>
                         <p class="mt-2">
-                            <x-mary-button
-                                label="{{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}"
-                                link="{{ url(route('laravel-crm.users.import.sample')) }}"
-                                icon="o-arrow-down-tray"
-                                class="btn-xs btn-outline mt-1" />
+                                <a
+                                    href="{{ route('laravel-crm.users.import.sample') }}"
+                                    class="btn btn-xs btn-outline mt-1"
+                                >
+                                    <x-bx-download class="w-4 h-4" />
+                                    {{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}
+                                </a>
                         </p>
                     </div>
                 </div>

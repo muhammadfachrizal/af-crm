@@ -1,0 +1,63 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateLaravelCrmVisitsTable extends Migration
+{
+    public function up()
+    {
+        Schema::create(config('laravel-crm.db_table_prefix').'visits', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('external_id');
+            $table->unsignedBigInteger('team_id')->index()->nullable();
+
+            $table->string('title')->nullable();
+
+            // Lokasi TUJUAN (target kunjungan, ditentukan pas visit dibuat)
+            $table->decimal('target_latitude', 10, 7);
+            $table->decimal('target_longitude', 10, 7);
+            $table->unsignedInteger('target_radius_meters')->default(100);
+            $table->string('target_address')->nullable();
+
+            $table->datetime('scheduled_at')->nullable();
+
+            // Data check-in (diisi pas sales beneran sampai lokasi)
+            $table->datetime('checked_in_at')->nullable();
+            $table->decimal('checkin_latitude', 10, 7)->nullable();
+            $table->decimal('checkin_longitude', 10, 7)->nullable();
+            $table->decimal('distance_meters', 10, 2)->nullable();
+            $table->string('photo_path')->nullable();
+            $table->text('notes')->nullable();
+
+            // planned | completed | cancelled
+            $table->string('status')->default('planned');
+
+            // Sales yang harus/sudah visit
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
+
+            // Null kalau sales bikin sendiri (self-initiated), terisi kalau di-assign admin/manager
+            $table->unsignedBigInteger('assigned_by_user_id')->nullable();
+            $table->foreign('assigned_by_user_id')->references('id')->on('users');
+
+            $table->unsignedBigInteger('user_created_id')->nullable();
+            $table->foreign('user_created_id')->references('id')->on('users');
+            $table->unsignedBigInteger('user_updated_id')->nullable();
+            $table->foreign('user_updated_id')->references('id')->on('users');
+            $table->unsignedBigInteger('user_deleted_id')->nullable();
+            $table->foreign('user_deleted_id')->references('id')->on('users');
+
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->index(['user_id', 'status']);
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists(config('laravel-crm.db_table_prefix').'visits');
+    }
+}

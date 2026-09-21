@@ -8,6 +8,7 @@ use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LabelBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LeadBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\OrganizationBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\PersonBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\PipelineStageBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\UserBriefResource;
 
 class DealResource extends JsonResource
@@ -34,7 +35,9 @@ class DealResource extends JsonResource
             'person' => $this->whenLoaded('person', fn () => $this->person ? new PersonBriefResource($this->person) : null),
             'organization' => $this->whenLoaded('organization', fn () => $this->organization ? new OrganizationBriefResource($this->organization) : null),
             'lead' => $this->whenLoaded('lead', fn () => $this->lead ? new LeadBriefResource($this->lead) : null),
+            'pipeline_stage' => $this->whenLoaded('pipelineStage', fn () => $this->pipelineStage ? new PipelineStageBriefResource($this->pipelineStage) : null),
             'labels' => LabelBriefResource::collection($this->whenLoaded('labels')),
+            'line_items' => DealProductResource::collection($this->whenLoaded('dealProducts')),
         ];
     }
 }

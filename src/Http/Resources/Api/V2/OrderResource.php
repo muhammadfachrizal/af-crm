@@ -3,9 +3,12 @@
 namespace VentureDrake\LaravelCrm\Http\Resources\Api\V2;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\DealBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LabelBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LeadBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\OrganizationBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\PersonBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\QuoteBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\UserBriefResource;
 
 class OrderResource extends JsonResource
@@ -30,6 +33,9 @@ class OrderResource extends JsonResource
             'owner' => $this->whenLoaded('ownerUser', fn () => $this->ownerUser ? new UserBriefResource($this->ownerUser) : null),
             'person' => $this->whenLoaded('person', fn () => $this->person ? new PersonBriefResource($this->person) : null),
             'organization' => $this->whenLoaded('organization', fn () => $this->organization ? new OrganizationBriefResource($this->organization) : null),
+            'lead' => $this->whenLoaded('lead', fn () => $this->lead ? new LeadBriefResource($this->lead) : null),
+            'deal' => $this->whenLoaded('deal', fn () => $this->deal ? new DealBriefResource($this->deal) : null),
+            'quote' => $this->whenLoaded('quote', fn () => $this->quote ? new QuoteBriefResource($this->quote) : null),
             'labels' => LabelBriefResource::collection($this->whenLoaded('labels')),
             'line_items' => OrderProductResource::collection($this->whenLoaded('orderProducts')),
         ];

@@ -26,7 +26,21 @@ class OrderController extends ApiController
     {
         $this->authorize('viewAny', Order::class);
 
-        $query = Order::query()->with(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product']);
+        $query = Order::query()->with(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product', 'lead', 'deal', 'quote']);
+
+        $query = $this->applySearch(
+            $query,
+            $request,
+            [
+                'order_id',
+                'reference',
+                'description',
+                'person.first_name',
+                'person.middle_name',
+                'person.last_name',
+                'organization.name',
+            ]
+        );
 
         if ($request->filled('user_owner_id')) {
             $query->where('user_owner_id', $request->input('user_owner_id'));
@@ -48,7 +62,7 @@ class OrderController extends ApiController
     {
         $this->authorize('view', $order);
 
-        $order->load(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product']);
+        $order->load(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product', 'lead', 'deal', 'quote']);
 
         return new OrderResource($order);
     }
@@ -61,7 +75,7 @@ class OrderController extends ApiController
 
         $order = $this->orderService->create($payload, $person, $organization);
 
-        $order->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product']);
+        $order->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product', 'lead', 'deal', 'quote']);
 
         return (new OrderResource($order))->response()->setStatusCode(201);
     }
@@ -74,7 +88,7 @@ class OrderController extends ApiController
 
         $this->orderService->update($payload, $order, $person, $organization);
 
-        $order->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product']);
+        $order->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'orderProducts.product', 'lead', 'deal', 'quote']);
 
         return new OrderResource($order);
     }

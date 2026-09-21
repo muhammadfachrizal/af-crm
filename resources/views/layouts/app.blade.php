@@ -24,6 +24,14 @@
         @livewireStyles
 
         @include('laravel-crm::layouts.partials.favicon')
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        />
+
+        <script
+            src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+        </script>
     </head>
     <body class="font-sans antialiased bg-base-200">
     
@@ -89,11 +97,15 @@
                 <hr class="my-2 border-t-[length:var(--border)] border-base-content/10">
 
                 @can('view crm tasks')
-                    <x-mary-menu-item title="{{ ucfirst(__('laravel-crm::lang.attendances'/)) }}" icon="fas.tasks" link="{{ url(route('laravel-crm.tasks.index')) }}" />
+                    <x-mary-menu-item title="{{ ucfirst(__('laravel-crm::lang.tasks')) }}" icon="fas.tasks" link="{{ url(route('laravel-crm.tasks.index')) }}" />
                 @endcan
 
                 @can('view crm attendances')
-                    <x-mary-menu-item title="{{ ucfirst(__('laravel-crm::lang.tasks')) }}" icon="fas.calendar-check" link="{{ url(route('laravel-crm.attendances.index')) }}" />
+                    <x-mary-menu-item title="{{ ucfirst(__('laravel-crm::lang.attendances')) }}" icon="fas.fingerprint" link="{{ url(route('laravel-crm.attendances.index')) }}" />
+                @endcan
+
+                @can('view crm visits')
+                    <x-mary-menu-item title="{{ ucfirst(__('laravel-crm::lang.visits')) }}" icon="fas.map-marker-alt" link="{{ url(route('laravel-crm.visits.index')) }}" />
                 @endcan
 
                 @haschatenabled

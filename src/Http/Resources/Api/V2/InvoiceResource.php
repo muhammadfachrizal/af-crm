@@ -5,6 +5,7 @@ namespace VentureDrake\LaravelCrm\Http\Resources\Api\V2;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LabelBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\OrderBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\OrganizationBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\PersonBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\UserBriefResource;
@@ -33,6 +34,7 @@ class InvoiceResource extends JsonResource
             'owner' => $this->whenLoaded('ownerUser', fn () => $this->ownerUser ? new UserBriefResource($this->ownerUser) : null),
             'person' => $this->whenLoaded('person', fn () => $this->person ? new PersonBriefResource($this->person) : null),
             'organization' => $this->whenLoaded('organization', fn () => $this->organization ? new OrganizationBriefResource($this->organization) : null),
+            'order' => $this->whenLoaded('order', fn () => $this->order ? new OrderBriefResource($this->order) : null),
             'labels' => LabelBriefResource::collection($this->whenLoaded('labels')),
             'line_items' => InvoiceLineResource::collection($this->whenLoaded('invoiceLines')),
         ];

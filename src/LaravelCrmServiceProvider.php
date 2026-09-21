@@ -42,6 +42,9 @@ use VentureDrake\LaravelCrm\Console\LaravelCrmUpdate;
 use VentureDrake\LaravelCrm\Console\LaravelCrmV2;
 use VentureDrake\LaravelCrm\Console\LaravelCrmXero;
 use VentureDrake\LaravelCrm\Livewire\Attendances\AttendanceIndex;
+use VentureDrake\LaravelCrm\Livewire\Visits\VisitIndex;
+use VentureDrake\LaravelCrm\Livewire\Visits\VisitCreate;
+
 use VentureDrake\LaravelCrm\Http\Livewire\Components\LiveCall;
 use VentureDrake\LaravelCrm\Http\Livewire\Components\LiveFile;
 use VentureDrake\LaravelCrm\Http\Livewire\Components\LiveLunch;
@@ -332,6 +335,7 @@ use VentureDrake\LaravelCrm\Models\XeroItem;
 use VentureDrake\LaravelCrm\Models\XeroPerson;
 use VentureDrake\LaravelCrm\Models\XeroPurchaseOrder;
 use VentureDrake\LaravelCrm\Models\Attendance;
+use VentureDrake\LaravelCrm\Models\Visit;
 use VentureDrake\LaravelCrm\Observers\ActivityObserver;
 use VentureDrake\LaravelCrm\Observers\CallObserver;
 use VentureDrake\LaravelCrm\Observers\ChatConversationObserver;
@@ -361,6 +365,7 @@ use VentureDrake\LaravelCrm\Observers\FileObserver;
 use VentureDrake\LaravelCrm\Observers\InvoiceLineObserver;
 use VentureDrake\LaravelCrm\Observers\InvoiceObserver;
 use VentureDrake\LaravelCrm\Observers\AttendanceObserver;
+use VentureDrake\LaravelCrm\Observers\VisitObserver;
 use VentureDrake\LaravelCrm\Observers\LeadObserver;
 use VentureDrake\LaravelCrm\Observers\LeadSourceObserver;
 use VentureDrake\LaravelCrm\Observers\LunchObserver;
@@ -412,6 +417,7 @@ use VentureDrake\LaravelCrm\Policies\FilePolicy;
 use VentureDrake\LaravelCrm\Policies\InvoicePolicy;
 use VentureDrake\LaravelCrm\Policies\LabelPolicy;
 use VentureDrake\LaravelCrm\Policies\AttendancePolicy;
+use VentureDrake\LaravelCrm\Policies\VisitPolicy;
 use VentureDrake\LaravelCrm\Policies\LeadPolicy;
 use VentureDrake\LaravelCrm\Policies\LeadSourcePolicy;
 use VentureDrake\LaravelCrm\Policies\LunchPolicy;
@@ -460,6 +466,7 @@ class LaravelCrmServiceProvider extends ServiceProvider
         'App\User' => UserPolicy::class,
         'App\Models\User' => UserPolicy::class,
         'VentureDrake\LaravelCrm\Models\Attendance' => AttendancePolicy::class,
+        'VentureDrake\LaravelCrm\Models\Visit' => VisitPolicy::class,
         'VentureDrake\LaravelCrm\Models\Team' => TeamPolicy::class,
         'VentureDrake\LaravelCrm\Models\Setting' => SettingPolicy::class,
         'VentureDrake\LaravelCrm\Models\Role' => RolePolicy::class,
@@ -564,6 +571,7 @@ class LaravelCrmServiceProvider extends ServiceProvider
 
         // Register Observers
         Attendance::observe(AttendanceObserver::class);
+        Visit::observe(VisitObserver::class);
         Lead::observe(LeadObserver::class);
         LeadSource::observe(LeadSourceObserver::class);
         Deal::observe(DealObserver::class);
@@ -876,6 +884,8 @@ class LaravelCrmServiceProvider extends ServiceProvider
 
         // Livewire components
         Livewire::component('crm-attendance-index', AttendanceIndex::class);
+        Livewire::component('crm-visit-index', VisitIndex::class);
+		Livewire::component('crm-visit-create', VisitCreate::class);
         Livewire::component('phone-edit', LivePhoneEdit::class);
         Livewire::component('email-edit', LiveEmailEdit::class);
         Livewire::component('address-edit', LiveAddressEdit::class);

@@ -30,6 +30,11 @@ class StoreDealRequest extends FormRequest
             'organization_id' => 'required_without_all:person_name,person_id,organization_name|max:255',
             'title' => 'required|max:255',
             'amount' => 'nullable|numeric',
+            'products' => 'nullable|array',
+            'products.*.id' => 'required|string',
+            'products.*.price' => 'required|numeric',
+            'products.*.quantity' => 'required|numeric',
+            'products.*.amount' => 'required|numeric',
         ];
     }
 

@@ -8,11 +8,13 @@ use VentureDrake\LaravelCrm\Http\Requests\Api\V2\StoreDealRequest;
 use VentureDrake\LaravelCrm\Http\Requests\Api\V2\UpdateDealRequest;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\DealResource;
 use VentureDrake\LaravelCrm\Models\Deal;
+use VentureDrake\LaravelCrm\Models\DealProduct;
 use VentureDrake\LaravelCrm\Models\Label;
 use VentureDrake\LaravelCrm\Models\Lead;
 use VentureDrake\LaravelCrm\Models\Organization;
 use VentureDrake\LaravelCrm\Models\Person;
 use VentureDrake\LaravelCrm\Models\PipelineStage;
+use VentureDrake\LaravelCrm\Models\Product;
 use VentureDrake\LaravelCrm\Services\DealService;
 
 class DealController extends ApiController
@@ -23,7 +25,21 @@ class DealController extends ApiController
     {
         $this->authorize('viewAny', Deal::class);
 
-        $query = Deal::query()->with(['ownerUser', 'person', 'organization', 'lead', 'labels']);
+        $query = Deal::query()->with(['ownerUser', 'person', 'organization', 'lead', 'labels', 'dealProducts.product', 'pipelineStage']);
+
+        $query = $this->applySearch(
+            $query,
+            $request,
+            [
+                'deal_id',
+                'title',
+                'person.first_name',
+                'person.middle_name',
+                'person.last_name',
+                'person.maiden_name',
+                'organization.name',
+            ]
+        );
 
         if ($request->filled('user_owner_id')) {
             $query->where('user_owner_id', $request->input('user_owner_id'));
@@ -45,7 +61,7 @@ class DealController extends ApiController
     {
         $this->authorize('view', $deal);
 
-        $deal->load(['ownerUser', 'person', 'organization', 'lead', 'labels']);
+        $deal->load(['ownerUser', 'person', 'organization', 'lead', 'labels', 'dealProducts.product', 'pipelineStage']);
 
         return new DealResource($deal);
     }
@@ -58,7 +74,7 @@ class DealController extends ApiController
 
         $deal = $this->dealService->create($payload, $person, $organization);
 
-        $deal->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels']);
+        $deal->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels', 'dealProducts.product', 'pipelineStage']);
 
         return (new DealResource($deal))->response()->setStatusCode(201);
     }
@@ -71,7 +87,7 @@ class DealController extends ApiController
 
         $this->dealService->update($payload, $deal, $person, $organization);
 
-        $deal->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels']);
+        $deal->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels', 'dealProducts.product', 'pipelineStage']);
 
         return new DealResource($deal);
     }
@@ -117,6 +133,8 @@ class DealController extends ApiController
             ->values()
             ->all();
 
+        $products = $this->buildProducts($request->input('line_items', []), $existing);
+
         $payload = (object) [
             'title' => $request->input('title', $existing?->title),
             'description' => $request->input('description', $existing?->description),
@@ -127,8 +145,42 @@ class DealController extends ApiController
             'user_owner_id' => $request->input('user_owner_id', $existing?->user_owner_id),
             'pipeline_stage_id' => $pipelineStage?->id ?? $existing?->pipeline_stage_id,
             'labels' => $labelIds,
+            'products' => $products,
         ];
 
         return [$payload, $person, $organization];
+    }
+
+    /**
+     * Bentuk line_items dari API (product_id UUID, quantity, unit_price,
+     * amount) ke bentuk yang diharapkan DealService (id = local product PK,
+     * price, quantity, amount, deal_product_id untuk baris yang sudah ada).
+     * Catatan: deal_products belum punya kolom 'comments', jadi field itu
+     * diabaikan di sini (beda dari Quote/Order/Invoice).
+     */
+    private function buildProducts(array $lineItems, ?Deal $existing): ?array
+    {
+        if (empty($lineItems)) {
+            return null;
+        }
+
+        return collect($lineItems)->map(function (array $item) use ($existing) {
+            $productId = Product::where('external_id', $item['product_id'])->value('id');
+
+            $dealProductId = null;
+            if ($existing && ! empty($item['id'])) {
+                $dealProductId = DealProduct::where('external_id', $item['id'])
+                    ->where('deal_id', $existing->id)
+                    ->value('id');
+            }
+
+            return [
+                'id' => $productId,
+                'deal_product_id' => $dealProductId,
+                'quantity' => $item['quantity'],
+                'price' => $item['unit_price'],
+                'amount' => $item['amount'],
+            ];
+        })->all();
     }
 }

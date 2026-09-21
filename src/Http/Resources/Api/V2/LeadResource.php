@@ -5,8 +5,10 @@ namespace VentureDrake\LaravelCrm\Http\Resources\Api\V2;
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LabelBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LeadSourceBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\OrganizationBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\PersonBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\PipelineStageBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\UserBriefResource;
 
 class LeadResource extends JsonResource
@@ -32,6 +34,8 @@ class LeadResource extends JsonResource
             'owner' => $this->whenLoaded('ownerUser', fn () => $this->ownerUser ? new UserBriefResource($this->ownerUser) : null),
             'person' => $this->whenLoaded('person', fn () => $this->person ? new PersonBriefResource($this->person) : null),
             'organization' => $this->whenLoaded('organization', fn () => $this->organization ? new OrganizationBriefResource($this->organization) : null),
+            'pipeline_stage' => $this->whenLoaded('pipelineStage', fn () => $this->pipelineStage ? new PipelineStageBriefResource($this->pipelineStage) : null),
+            'lead_source' => $this->whenLoaded('leadSource', fn () => $this->leadSource ? new LeadSourceBriefResource($this->leadSource) : null),
             'labels' => LabelBriefResource::collection($this->whenLoaded('labels')),
         ];
     }

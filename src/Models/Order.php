@@ -137,6 +137,11 @@ class Order extends Model
         return $this->belongsTo(Deal::class);
     }
 
+    public function lead()
+    {
+        return $this->belongsTo(Lead::class);
+    }
+
     public function quote()
     {
         return $this->belongsTo(Quote::class);

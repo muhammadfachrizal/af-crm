@@ -310,29 +310,26 @@ class UserController extends Controller
      * @return StreamedResponse
      */
     public function sampleCsv()
-    {
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="users-import-sample.csv"',
-        ];
+{
+    $rows = [
+        ['name', 'email', 'crm_access', 'role', 'email_verified_at', 'created_at', 'updated_at', 'last_online_at', 'mailing_list'],
+        ['Jane Smith', 'jane@example.com', '1', 'Admin', '2024-01-15 09:00:00', '2024-01-15 09:00:00', '2024-01-15 09:00:00', '2024-01-15 09:00:00', '1'],
+        ['John Doe', 'john@example.com', '1', '', '', '2024-03-10 14:30:00', '2024-03-10 14:30:00', '', '1'],
+        ['Alice Brown', 'alice@example.com', '0', '', '', '', '', '', '0'],
+    ];
 
-        $rows = [
-            ['name', 'email', 'crm_access', 'role', 'email_verified_at', 'created_at', 'updated_at', 'last_online_at', 'mailing_list'],
-            ['Jane Smith', 'jane@example.com', '1', 'Admin', '2024-01-15 09:00:00', '2024-01-15 09:00:00', '2024-01-15 09:00:00', '2024-01-15 09:00:00', '1'],
-            ['John Doe', 'john@example.com', '1', '', '', '2024-03-10 14:30:00', '2024-03-10 14:30:00', '', '1'],
-            ['Alice Brown', 'alice@example.com', '0', '', '', '', '', '', '0'],
-        ];
+    return response()->streamDownload(function () use ($rows) {
+        $handle = fopen('php://output', 'w');
 
-        $callback = function () use ($rows) {
-            $handle = fopen('php://output', 'w');
-            foreach ($rows as $row) {
-                fputcsv($handle, $row);
-            }
-            fclose($handle);
-        };
+        foreach ($rows as $row) {
+            fputcsv($handle, $row);
+        }
 
-        return response()->stream($callback, 200, $headers);
-    }
+        fclose($handle);
+    }, 'users-import-sample.csv', [
+        'Content-Type' => 'text/csv; charset=UTF-8',
+    ]);
+}
 
     /**
      * Remove the specified resource from storage.

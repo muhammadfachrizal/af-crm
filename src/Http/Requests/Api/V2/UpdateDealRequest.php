@@ -29,6 +29,12 @@ class UpdateDealRequest extends FormRequest
             'user_owner_id' => ['nullable', 'integer', 'exists:users,id', new OwnerInCurrentTeam],
             'labels' => ['nullable', 'array'],
             'labels.*' => ['string', 'uuid', "exists:{$prefix}labels,external_id"],
+            'line_items' => ['nullable', 'array'],
+            'line_items.*.id' => ['nullable', 'string', 'uuid'],
+            'line_items.*.product_id' => ['required', 'string', 'uuid', "exists:{$prefix}products,external_id"],
+            'line_items.*.quantity' => ['required', 'integer', 'min:1'],
+            'line_items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'line_items.*.amount' => ['required', 'numeric', 'min:0'],
         ];
     }
 }

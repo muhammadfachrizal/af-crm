@@ -3,6 +3,8 @@
 namespace VentureDrake\LaravelCrm\Http\Resources\Api\V2;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\ProductCategoryBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\TaxRateBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\UserBriefResource;
 
 class ProductResource extends JsonResource
@@ -19,6 +21,8 @@ class ProductResource extends JsonResource
             'tax_rate' => $this->tax_rate !== null ? (float) $this->tax_rate : null,
             'tax_rate_id' => $this->tax_rate_id,
             'product_category_id' => $this->whenLoaded('productCategory', fn () => $this->productCategory?->external_id),
+            'product_category' => $this->whenLoaded('productCategory', fn () => $this->productCategory ? new ProductCategoryBriefResource($this->productCategory) : null),
+            'tax_rate_option' => $this->whenLoaded('taxRate', fn () => $this->taxRate ? new TaxRateBriefResource($this->taxRate) : null),
             'purchase_account' => $this->purchase_account,
             'sales_account' => $this->sales_account,
             'active' => (bool) $this->active,

@@ -132,6 +132,11 @@ class Organization extends Model
         return $this->belongsTo(OrganizationType::class);
     }
 
+    public function industry()
+    {
+        return $this->belongsTo(Industry::class);
+    }
+
     public function contacts()
     {
         return $this->morphMany(Contact::class, 'contactable');

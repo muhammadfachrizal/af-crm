@@ -5,12 +5,13 @@
     {{-- HEADER --}}
     <x-mary-header title="{{ ucfirst(__('laravel-crm::lang.import_people')) }}" class="mb-5" progress-indicator>
         <x-slot:actions>
-            <x-mary-button
-                label="{{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}"
-                link="{{ url(route('laravel-crm.people.import.sample')) }}"
-                icon="o-arrow-down-tray"
-                class="btn-sm btn-outline"
-                responsive />
+            <a
+                href="{{ route('laravel-crm.people.import.sample') }}"
+                class="btn btn-sm btn-outline"
+            >
+                <x-bx-download class="w-4 h-4" />
+                {{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}
+            </a>
             <x-mary-button
                 label="{{ ucfirst(__('laravel-crm::lang.back_to_people')) }}"
                 link="{{ url(route('laravel-crm.people.index')) }}"
@@ -182,11 +183,13 @@
                             <li><code>description</code></li>
                         </ul>
                         <p class="mt-2">
-                            <x-mary-button
-                                label="{{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}"
-                                link="{{ url(route('laravel-crm.people.import.sample')) }}"
-                                icon="o-arrow-down-tray"
-                                class="btn-xs btn-outline mt-1" />
+                            <a
+                                href="{{ route('laravel-crm.people.import.sample') }}"
+                                class="btn btn-xs btn-outline mt-1"
+                            >
+                                <x-bx-download class="w-4 h-4" />
+                                {{ ucfirst(__('laravel-crm::lang.download_sample_csv')) }}
+                            </a>
                         </p>
                     </div>
                 </div>

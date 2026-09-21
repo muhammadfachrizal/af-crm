@@ -3,7 +3,10 @@
 namespace VentureDrake\LaravelCrm\Http\Resources\Api\V2;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\IndustryBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\LabelBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\OrganizationTypeBriefResource;
+use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\TimezoneBriefResource;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\UserBriefResource;
 
 class OrganizationResource extends JsonResource
@@ -26,6 +29,9 @@ class OrganizationResource extends JsonResource
             'updated_at' => $this->updated_at?->toIso8601String(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),
             'owner' => $this->whenLoaded('ownerUser', fn () => $this->ownerUser ? new UserBriefResource($this->ownerUser) : null),
+            'organization_type' => $this->whenLoaded('organizationType', fn () => $this->organizationType ? new OrganizationTypeBriefResource($this->organizationType) : null),
+            'industry' => $this->whenLoaded('industry', fn () => $this->industry ? new IndustryBriefResource($this->industry) : null),
+            'timezone' => $this->whenLoaded('timezone', fn () => $this->timezone ? new TimezoneBriefResource($this->timezone) : null),
             'labels' => LabelBriefResource::collection($this->whenLoaded('labels')),
         ];
     }

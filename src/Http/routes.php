@@ -34,6 +34,18 @@ Route::group(['prefix' => 'attendances', 'middleware' => 'auth.laravel-crm'], fu
         ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
 });
 
+/* Visits */
+
+Route::group(['prefix' => 'visits', 'middleware' => 'auth.laravel-crm'], function () {
+    Route::get('', 'VentureDrake\LaravelCrm\Http\Controllers\VisitController@index')
+        ->name('laravel-crm.visits.index')
+        ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Visit']);
+
+    Route::get('create', 'VentureDrake\LaravelCrm\Http\Controllers\VisitController@create')
+        ->name('laravel-crm.visits.create')
+        ->middleware(['can:create,VentureDrake\LaravelCrm\Models\Visit']);
+});
+
 
 /* Email Campaigns */
 

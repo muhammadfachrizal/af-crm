@@ -14,6 +14,7 @@ use VentureDrake\LaravelCrm\Models\Organization;
 use VentureDrake\LaravelCrm\Models\Person;
 use VentureDrake\LaravelCrm\Models\PipelineStage;
 use VentureDrake\LaravelCrm\Services\LeadService;
+use Carbon\Carbon;
 
 class LeadController extends ApiController
 {
@@ -23,7 +24,21 @@ class LeadController extends ApiController
     {
         $this->authorize('viewAny', Lead::class);
 
-        $query = Lead::query()->with(['ownerUser', 'person', 'organization', 'labels']);
+        $query = Lead::query()->with(['ownerUser', 'person', 'organization', 'labels', 'pipelineStage', 'leadSource']);
+
+        $query = $this->applySearch(
+            $query,
+            $request,
+            [
+                'lead_id',
+                'title',
+                'person.first_name',
+                'person.middle_name',
+                'person.last_name',
+                'person.maiden_name',
+                'organization.name',
+            ]
+        );
 
         if ($request->filled('user_owner_id')) {
             $query->where('user_owner_id', $request->input('user_owner_id'));
@@ -45,7 +60,7 @@ class LeadController extends ApiController
     {
         $this->authorize('view', $lead);
 
-        $lead->load(['ownerUser', 'person', 'organization', 'labels']);
+        $lead->load(['ownerUser', 'person', 'organization', 'labels', 'pipelineStage', 'leadSource']);
 
         return new LeadResource($lead);
     }
@@ -60,7 +75,7 @@ class LeadController extends ApiController
 
         $this->applyDirectFields($lead, $request);
 
-        $lead->refresh()->load(['ownerUser', 'person', 'organization', 'labels']);
+        $lead->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'pipelineStage', 'leadSource']);
 
         return (new LeadResource($lead))->response()->setStatusCode(201);
     }
@@ -75,7 +90,7 @@ class LeadController extends ApiController
 
         $this->applyDirectFields($lead, $request);
 
-        $lead->refresh()->load(['ownerUser', 'person', 'organization', 'labels']);
+        $lead->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'pipelineStage', 'leadSource']);
 
         return new LeadResource($lead);
     }
@@ -137,8 +152,13 @@ class LeadController extends ApiController
 
     private function applyDirectFields(Lead $lead, FormRequest $request): void
     {
-        if ($request->filled('expected_close')) {
-            $lead->expected_close = $request->input('expected_close');
+        if ($request->has('expected_close')) {
+            $value = $request->input('expected_close');
+
+            $lead->expected_close = $value
+                ? Carbon::parse($value)
+                : null;
+
             $lead->saveQuietly();
         }
     }

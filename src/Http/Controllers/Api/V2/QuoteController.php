@@ -27,6 +27,21 @@ class QuoteController extends ApiController
 
         $query = Quote::query()->with(['ownerUser', 'person', 'organization', 'labels', 'quoteProducts.product']);
 
+        $query = $this->applySearch(
+            $query,
+            $request,
+            [
+                'quote_id',
+                'title',
+                'reference',
+                'person.first_name',
+                'person.middle_name',
+                'person.last_name',
+                'person.maiden_name',
+                'organization.name',
+            ]
+        );
+
         if ($request->filled('user_owner_id')) {
             $query->where('user_owner_id', $request->input('user_owner_id'));
         }

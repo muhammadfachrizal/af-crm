@@ -61,8 +61,8 @@ class LiveNotes extends Component
         ]);
 
         $this->model->activities()->create([
-            'causable_type' => auth()->user()->getMorphClass(),
-            'causable_id' => auth()->user()->id,
+            'causeable_type' => auth()->user()->getMorphClass(),
+            'causeable_id' => auth()->user()->id,
             'timelineable_type' => $this->model->getMorphClass(),
             'timelineable_id' => $this->model->id,
             'recordable_type' => $note->getMorphClass(),

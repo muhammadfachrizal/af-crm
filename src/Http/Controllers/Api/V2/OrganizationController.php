@@ -18,7 +18,7 @@ class OrganizationController extends ApiController
     {
         $this->authorize('viewAny', Organization::class);
 
-        $query = Organization::query()->with(['ownerUser', 'labels']);
+        $query = Organization::query()->with(['ownerUser', 'labels', 'organizationType', 'industry', 'timezone']);
 
         if ($request->filled('user_owner_id')) {
             $query->where('user_owner_id', $request->input('user_owner_id'));
@@ -31,7 +31,14 @@ class OrganizationController extends ApiController
             '-created_at'
         );
 
-        $organizations = $query->paginate($this->perPage($request))->withQueryString();
+        $organizations = $this->searchAndPaginateAutomatically(
+            $query,
+            $request,
+            $this->perPage($request),
+            [
+                'name',
+            ]
+        );
 
         return OrganizationResource::collection($organizations);
     }
@@ -40,7 +47,7 @@ class OrganizationController extends ApiController
     {
         $this->authorize('view', $organization);
 
-        $organization->load(['ownerUser', 'labels']);
+        $organization->load(['ownerUser', 'labels', 'organizationType', 'industry', 'timezone']);
 
         return new OrganizationResource($organization);
     }
@@ -53,7 +60,7 @@ class OrganizationController extends ApiController
 
         $organization = $this->organizationService->create($payload);
 
-        $organization->refresh()->load(['ownerUser', 'labels']);
+        $organization->refresh()->load(['ownerUser', 'labels', 'organizationType', 'industry', 'timezone']);
 
         return (new OrganizationResource($organization))->response()->setStatusCode(201);
     }
@@ -66,7 +73,7 @@ class OrganizationController extends ApiController
 
         $this->organizationService->update($organization, $payload);
 
-        $organization->refresh()->load(['ownerUser', 'labels']);
+        $organization->refresh()->load(['ownerUser', 'labels', 'organizationType', 'industry', 'timezone']);
 
         return new OrganizationResource($organization);
     }

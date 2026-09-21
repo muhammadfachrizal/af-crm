@@ -24,7 +24,21 @@ class InvoiceController extends ApiController
     {
         $this->authorize('viewAny', Invoice::class);
 
-        $query = Invoice::query()->with(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product']);
+        $query = Invoice::query()->with(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
+
+        $query = $this->applySearch(
+            $query,
+            $request,
+            [
+                'reference',
+                'invoice_id',
+                'person.first_name',
+                'person.middle_name',
+                'person.last_name',
+                'person.maiden_name',
+                'organization.name',
+            ]
+        );
 
         if ($request->filled('user_owner_id')) {
             $query->where('user_owner_id', $request->input('user_owner_id'));
@@ -46,7 +60,7 @@ class InvoiceController extends ApiController
     {
         $this->authorize('view', $invoice);
 
-        $invoice->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product']);
+        $invoice->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
 
         return new InvoiceResource($invoice);
     }
@@ -59,7 +73,7 @@ class InvoiceController extends ApiController
 
         $invoice = $this->invoiceService->create($payload, $person, $organization);
 
-        $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product']);
+        $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
 
         return (new InvoiceResource($invoice))->response()->setStatusCode(201);
     }
@@ -72,7 +86,7 @@ class InvoiceController extends ApiController
 
         $this->invoiceService->update($payload, $invoice, $person, $organization);
 
-        $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product']);
+        $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
 
         return new InvoiceResource($invoice);
     }

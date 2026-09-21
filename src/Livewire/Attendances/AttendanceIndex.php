@@ -62,7 +62,7 @@ class AttendanceIndex extends Component
     {
         $query = Attendance::query()->with(['user']);
 
-        if (! auth()->user()->hasPermissionTo('manage crm attendances')) {
+        if (! auth()->user()->hasPermissionTo('edit crm attendances')) {
             $query->where('user_id', auth()->id());
         } elseif (! empty($this->user_id)) {
             $query->whereIn('user_id', $this->user_id);

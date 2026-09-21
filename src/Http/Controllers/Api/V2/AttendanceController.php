@@ -78,6 +78,22 @@ class AttendanceController extends ApiController
     {
         $this->authorize('create', Attendance::class);
 
+        $lastToday = Attendance::query()
+        ->forUser($request->user()->id)
+        ->today()
+        ->latest('recorded_at')
+        ->first();
+
+        $type = $request->input('type');
+
+        if ($type === 'in' && $lastToday && $lastToday->type === 'in') {
+            return response()->json(['message' => 'Anda sudah Check In hari ini.'], 422);
+        }
+
+        if ($type === 'out' && (! $lastToday || $lastToday->type === 'out')) {
+            return response()->json(['message' => 'Anda belum Check In, atau sudah menyelesaikan absensi hari ini.'], 422);
+        }
+
         $photoPath = null;
 
         if ($request->hasFile('photo')) {
@@ -99,7 +115,7 @@ class AttendanceController extends ApiController
 
         return (new AttendanceResource($attendance))->response()->setStatusCode(201);
     }
-
+    
     public function destroy(Attendance $attendance)
     {
         $this->authorize('delete', $attendance);

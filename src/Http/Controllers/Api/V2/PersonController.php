@@ -33,7 +33,17 @@ class PersonController extends ApiController
             '-created_at'
         );
 
-        $people = $query->paginate($this->perPage($request))->withQueryString();
+        $people = $this->searchAndPaginateAutomatically(
+            $query,
+            $request,
+            $this->perPage($request),
+            [
+                'first_name',
+                'middle_name',
+                'last_name',
+                'maiden_name',
+            ]
+        );
 
         return PersonResource::collection($people);
     }

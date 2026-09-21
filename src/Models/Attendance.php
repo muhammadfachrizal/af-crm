@@ -5,6 +5,7 @@ namespace VentureDrake\LaravelCrm\Models;
 use App\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
+use Carbon\Carbon;
 
 class Attendance extends Model
 {
@@ -72,6 +73,17 @@ class Attendance extends Model
 
     public function scopeToday($query)
     {
-        return $query->whereDate('recorded_at', now()->toDateString());
+        $start = Carbon::today('Asia/Jakarta')
+            ->startOfDay()
+            ->utc();
+
+        $end = Carbon::today('Asia/Jakarta')
+            ->endOfDay()
+            ->utc();
+
+        return $query->whereBetween('recorded_at', [
+            $start,
+            $end,
+        ]);
     }
 }

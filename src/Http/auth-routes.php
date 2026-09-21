@@ -24,7 +24,7 @@ Route::middleware('guest')->group(function () {
         ->name('laravel-crm.password.request');
 
     Route::get('password/reset/{token}', ResetPassword::class)
-        ->name('laravel-crm.password.reset');
+        ->name('password.reset');
 });
 
 Route::post('logout', function () {

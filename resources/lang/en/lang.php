@@ -407,6 +407,15 @@ return [
     'location' => 'location',
     'photo' => 'photo',
 
+    'visit' => 'visit',
+    'visits' => 'visits',
+    'planned' => 'planned',
+    'completed' => 'completed',
+    'cancelled' => 'cancelled',
+    'distance' => 'distance',
+    'add' => 'add',
+
+
     // Chat
     'chat' => 'chat',
     'chats' => 'chats',
