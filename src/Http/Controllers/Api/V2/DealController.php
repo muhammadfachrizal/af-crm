@@ -4,6 +4,7 @@ namespace VentureDrake\LaravelCrm\Http\Controllers\Api\V2;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use VentureDrake\LaravelCrm\Http\Requests\Api\V2\StoreDealRequest;
 use VentureDrake\LaravelCrm\Http\Requests\Api\V2\UpdateDealRequest;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\DealResource;
@@ -182,5 +183,68 @@ class DealController extends ApiController
                 'amount' => $item['amount'],
             ];
         })->all();
+    }
+
+    /**
+     * Tandai deal sebagai menang, pindahkan ke stage "Closed Won" di
+     * pipeline-nya. Sama persis dengan DealShow::won() di web.
+     */
+    public function won(Deal $deal)
+    {
+        $this->authorize('update', $deal);
+
+        $pipeline = $deal->pipeline;
+
+        $deal->update([
+            'closed_status' => 'won',
+            'closed_at' => Carbon::now(),
+            'pipeline_stage_id' => $pipeline?->pipelineStages()->where('name', 'Closed Won')->first()->id ?? $deal->pipeline_stage_id,
+        ]);
+
+        $deal->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels', 'dealProducts.product', 'pipelineStage']);
+
+        return new DealResource($deal);
+    }
+
+    /**
+     * Tandai deal sebagai kalah, pindahkan ke stage "Closed Lost". Sama
+     * persis dengan DealShow::lost() di web.
+     */
+    public function lost(Deal $deal)
+    {
+        $this->authorize('update', $deal);
+
+        $pipeline = $deal->pipeline;
+
+        $deal->update([
+            'closed_status' => 'lost',
+            'closed_at' => Carbon::now(),
+            'pipeline_stage_id' => $pipeline?->pipelineStages()->where('name', 'Closed Lost')->first()->id ?? $deal->pipeline_stage_id,
+        ]);
+
+        $deal->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels', 'dealProducts.product', 'pipelineStage']);
+
+        return new DealResource($deal);
+    }
+
+    /**
+     * Buka kembali deal yang sudah ditutup (won/lost), pindahkan balik ke
+     * stage "Pending". Sama persis dengan DealShow::reopen() di web.
+     */
+    public function reopen(Deal $deal)
+    {
+        $this->authorize('update', $deal);
+
+        $pipeline = $deal->pipeline;
+
+        $deal->update([
+            'closed_status' => null,
+            'closed_at' => null,
+            'pipeline_stage_id' => $pipeline?->pipelineStages()->where('name', 'Pending')->first()->id ?? $deal->pipeline_stage_id,
+        ]);
+
+        $deal->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels', 'dealProducts.product', 'pipelineStage']);
+
+        return new DealResource($deal);
     }
 }

@@ -181,4 +181,57 @@ class OrderController extends ApiController
             ];
         })->all();
     }
+
+    /**
+     * Bikin Invoice baru dari Order — sama persis dengan alur
+     * InvoiceCreate.php pas dibuka dengan fromModelType=order di web
+     * (nyalin lead_id/deal_id/quote_id/order_id/person/organization/
+     * currency, TIDAK nyalin item produk — sama seperti web, user isi
+     * manual item produknya di invoice yang baru dibuat).
+     *
+     * Catatan: tombol ini di web ke-hide kalau Order::invoiceComplete()
+     * true. Karena line item invoice yang dibuat dari sini belum
+     * ke-link ke order_product_id line yang mana (fitur pemilihan
+     * produk dari order belum ada di mobile), invoiceComplete() cuma
+     * akurat buat order yang belum ada produknya sama sekali (langsung
+     * true kalau order kosong) — untuk order yang ada produknya,
+     * tombol ini akan tetap muncul walau sudah pernah dikonversi sekali
+     * (bisa dikonversi berkali-kali), sama seperti kalau web dipakai
+     * tanpa fitur pemilihan produk per baris.
+     */
+    public function convertToInvoice(Order $order)
+    {
+        $this->authorize('update', $order);
+
+        if ($order->invoiceComplete()) {
+            return response()->json([
+                'message' => 'Order ini sudah lengkap terinvoice.',
+            ], 422);
+        }
+
+        $invoiceRequest = (object) [
+            'order_id' => $order->id,
+            'reference' => $order->reference,
+            'issue_date' => null,
+            'due_date' => null,
+            'currency' => $order->currency,
+            'terms' => null,
+            'sub_total' => null,
+            'tax' => null,
+            'total' => null,
+            'user_owner_id' => $order->user_owner_id ?? auth()->id(),
+        ];
+
+        $invoice = app(\VentureDrake\LaravelCrm\Services\InvoiceService::class)->create(
+            $invoiceRequest,
+            $order->person,
+            $order->organization
+        );
+
+        $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
+
+        return (new \VentureDrake\LaravelCrm\Http\Resources\Api\V2\InvoiceResource($invoice))
+            ->response()
+            ->setStatusCode(201);
+    }
 }

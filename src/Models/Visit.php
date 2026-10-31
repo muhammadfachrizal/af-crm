@@ -2,6 +2,7 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use App\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
@@ -9,6 +10,7 @@ use Illuminate\Support\Str;
 
 class Visit extends Model
 {
+    use BelongsToTenant;
     use SoftDeletes;
     use BelongsToTeams;
 

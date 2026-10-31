@@ -178,4 +178,126 @@ class QuoteController extends ApiController
             ];
         })->all();
     }
+
+    private function pipelineStageIdByName(Quote $quote, string $name): ?int
+    {
+        $pipeline = \VentureDrake\LaravelCrm\Models\Pipeline::where('model', Quote::class)->first();
+
+        return $pipeline?->pipelineStages()->where('name', $name)->first()->id ?? $quote->pipeline_stage_id;
+    }
+
+    private function freshQuote(Quote $quote): QuoteResource
+    {
+        $quote->refresh()->load(['ownerUser', 'person', 'organization', 'lead', 'labels', 'quoteProducts.product', 'pipelineStage']);
+
+        return new QuoteResource($quote);
+    }
+
+    /** Sama persis dengan QuoteShow::accept() di web. */
+    public function accept(Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        $quote->update([
+            'accepted_at' => now(),
+            'pipeline_stage_id' => $this->pipelineStageIdByName($quote, 'Accepted'),
+        ]);
+
+        return $this->freshQuote($quote);
+    }
+
+    /** Sama persis dengan QuoteShow::reject() di web. */
+    public function reject(Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        $quote->update([
+            'rejected_at' => now(),
+            'pipeline_stage_id' => $this->pipelineStageIdByName($quote, 'Rejected'),
+        ]);
+
+        return $this->freshQuote($quote);
+    }
+
+    /** Sama persis dengan QuoteShow::unaccept() di web. */
+    public function unaccept(Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        $quote->update([
+            'accepted_at' => null,
+            'pipeline_stage_id' => $this->pipelineStageIdByName($quote, 'Draft'),
+        ]);
+
+        return $this->freshQuote($quote);
+    }
+
+    /** Sama persis dengan QuoteShow::unreject() di web. */
+    public function unreject(Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        $quote->update([
+            'rejected_at' => null,
+            'pipeline_stage_id' => $this->pipelineStageIdByName($quote, 'Draft'),
+        ]);
+
+        return $this->freshQuote($quote);
+    }
+
+    /**
+     * Kirim quote via email — generate PDF + signed portal link, sama
+     * persis dengan QuoteSend.php di web (Livewire component-nya).
+     */
+    public function send(Request $request, Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        $data = $request->validate([
+            'to' => ['required', 'string'],
+            'subject' => ['required', 'string'],
+            'message' => ['required', 'string'],
+            'cc' => ['nullable', 'string'],
+        ]);
+
+        $signedUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'laravel-crm.portal.quotes.show',
+            now()->addDays(14),
+            ['quote' => $quote]
+        );
+
+        $email = $quote->person?->getPrimaryEmail();
+        $phone = $quote->person?->getPrimaryPhone();
+        $address = $quote->person?->getPrimaryAddress();
+        $organizationAddress = $quote->organization?->getPrimaryAddress();
+
+        $pdfLocation = 'laravel-crm/'.strtolower(class_basename($quote)).'/'.$quote->id.'/';
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(storage_path('app/'.$pdfLocation));
+        $pdfPath = 'app/'.$pdfLocation.'quote-'.strtolower($quote->quote_id).'.pdf';
+
+        \Barryvdh\DomPDF\Facade\Pdf::setOption([
+            'fontDir' => public_path('vendor/laravel-crm/fonts'),
+        ])
+            ->loadView('laravel-crm::quotes.pdf', [
+                'quote' => $quote,
+                'dateFormat' => app('laravel-crm.settings')->get('date_format', config('laravel-crm.date_format')),
+                'email' => $email,
+                'phone' => $phone,
+                'address' => $address,
+                'organization_address' => $organizationAddress,
+                'fromName' => app('laravel-crm.settings')->get('organization_name', null),
+                'logo' => app('laravel-crm.settings')->get('logo_file', null),
+            ])->save(storage_path($pdfPath));
+
+        \Illuminate\Support\Facades\Mail::send(new \VentureDrake\LaravelCrm\Mail\SendQuote([
+            'to' => $data['to'],
+            'subject' => $data['subject'],
+            'message' => $data['message'],
+            'cc' => $data['cc'] ?? null,
+            'onlineQuoteLink' => $signedUrl,
+            'pdf' => $pdfPath,
+        ]));
+
+        return response()->json(['message' => 'Quote berhasil dikirim.']);
+    }
 }

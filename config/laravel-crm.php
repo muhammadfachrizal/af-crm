@@ -269,4 +269,14 @@ return [
         'settings',
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Multi tenant per customer (tenant_id)
+    |--------------------------------------------------------------------------
+    | true  = semua model difilter otomatis berdasarkan tenant_id user yang login.
+    | User dengan tenant_id NULL = super admin (melihat semua customer).
+    */
+    'tenancy' => env('LARAVEL_CRM_TENANCY', true),
+
 ];

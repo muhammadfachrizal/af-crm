@@ -2,10 +2,12 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
 
 class ChatVisitor extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
 
     protected $guarded = ['id'];

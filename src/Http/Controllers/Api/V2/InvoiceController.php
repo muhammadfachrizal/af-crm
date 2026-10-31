@@ -167,4 +167,97 @@ class InvoiceController extends ApiController
             ];
         })->all();
     }
+
+    private function freshInvoice(Invoice $invoice): InvoiceResource
+    {
+        $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
+
+        return new InvoiceResource($invoice);
+    }
+
+    /**
+     * Catat pembayaran invoice — sama persis dengan InvoicePay::pay() di
+     * web. Nominalnya diterima sebagai angka bersih dari mobile (bukan
+     * string berformat), jadi tidak kena bug "amount field must be a
+     * number" yang ada di web (lihat catatan di InvoicePay.php: itu bug
+     * dari mask uang Alpine.js yang ngirim string berformat ke Livewire).
+     */
+    public function pay(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        $amountDue = $invoice->amount_due !== null ? $invoice->amount_due / 100 : 0;
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:'.max($amountDue, 0.01)],
+        ]);
+
+        $amountPaidBefore = $invoice->amount_paid !== null ? $invoice->amount_paid / 100 : 0;
+        $newAmountDue = round($amountDue - $data['amount'], 2);
+
+        $invoice->update([
+            'amount_paid' => $data['amount'] + $amountPaidBefore,
+            'amount_due' => $newAmountDue,
+            'fully_paid_at' => ($newAmountDue <= 0) ? now() : null,
+        ]);
+
+        return $this->freshInvoice($invoice);
+    }
+
+    /**
+     * Kirim invoice via email — generate PDF + signed portal link, sama
+     * persis dengan InvoiceSend.php di web.
+     */
+    public function send(Request $request, Invoice $invoice)
+    {
+        $this->authorize('update', $invoice);
+
+        $data = $request->validate([
+            'to' => ['required', 'string'],
+            'subject' => ['required', 'string'],
+            'message' => ['required', 'string'],
+            'cc' => ['nullable', 'string'],
+        ]);
+
+        $signedUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'laravel-crm.portal.invoices.show',
+            now()->addDays(14),
+            ['invoice' => $invoice]
+        );
+
+        $email = $invoice->person?->getPrimaryEmail();
+        $phone = $invoice->person?->getPrimaryPhone();
+        $address = $invoice->person?->getPrimaryAddress();
+        $organizationAddress = $invoice->organization?->getPrimaryAddress();
+
+        $pdfLocation = 'laravel-crm/'.strtolower(class_basename($invoice)).'/'.$invoice->id.'/';
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(storage_path('app/'.$pdfLocation));
+        $pdfPath = 'app/'.$pdfLocation.'invoice-'.strtolower($invoice->invoice_id).'.pdf';
+
+        \Barryvdh\DomPDF\Facade\Pdf::setOption([
+            'fontDir' => public_path('vendor/laravel-crm/fonts'),
+        ])
+            ->loadView('laravel-crm::invoices.pdf', [
+                'invoice' => $invoice,
+                'dateFormat' => app('laravel-crm.settings')->get('date_format', config('laravel-crm.date_format')),
+                'taxName' => app('laravel-crm.settings')->get('tax_name', 'Tax'),
+                'contactDetails' => app('laravel-crm.settings')->get('invoice_contact_details', null),
+                'paymentInstructions' => app('laravel-crm.settings')->get('invoice_payment_instructions', null),
+                'email' => $email,
+                'phone' => $phone,
+                'address' => $address,
+                'organization_address' => $organizationAddress,
+            ])->save(storage_path($pdfPath));
+
+        \Illuminate\Support\Facades\Mail::send(new \VentureDrake\LaravelCrm\Mail\SendInvoice([
+            'to' => $data['to'],
+            'subject' => $data['subject'],
+            'message' => $data['message'],
+            'cc' => $data['cc'] ?? null,
+            'onlineInvoiceLink' => $signedUrl,
+            'pdf' => $pdfPath,
+        ]));
+
+        return response()->json(['message' => 'Invoice berhasil dikirim.']);
+    }
 }

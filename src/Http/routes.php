@@ -34,6 +34,29 @@ Route::group(['prefix' => 'attendances', 'middleware' => 'auth.laravel-crm'], fu
         ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
 });
 
+/* Tenants (khusus Super Admin) */
+
+Route::group(['prefix' => 'tenants', 'middleware' => ['auth.laravel-crm', 'laravel-crm.superadmin']], function () {
+    Route::get('', 'VentureDrake\LaravelCrm\Http\Controllers\TenantController@index')
+        ->name('laravel-crm.tenants.index');
+    Route::get('dashboard', 'VentureDrake\LaravelCrm\Http\Controllers\TenantController@dashboard')
+        ->name('laravel-crm.tenants.dashboard');
+});
+
+/* Work Locations (per tenant) */
+
+Route::group(['prefix' => 'work-locations', 'middleware' => 'auth.laravel-crm'], function () {
+    Route::get('', 'VentureDrake\LaravelCrm\Http\Controllers\WorkLocationController@index')
+        ->name('laravel-crm.work-locations.index')
+        ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
+    Route::get('create', 'VentureDrake\LaravelCrm\Http\Controllers\WorkLocationController@create')
+        ->name('laravel-crm.work-locations.create')
+        ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
+    Route::get('{id}/edit', 'VentureDrake\LaravelCrm\Http\Controllers\WorkLocationController@edit')
+        ->name('laravel-crm.work-locations.edit')
+        ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
+});
+
 /* Visits */
 
 Route::group(['prefix' => 'visits', 'middleware' => 'auth.laravel-crm'], function () {

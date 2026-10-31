@@ -29,6 +29,16 @@ class AuthController extends ApiController
             ]);
         }
 
+        if (! empty($user->tenant_id)) {
+            $tenant = \VentureDrake\LaravelCrm\Models\Tenant::find($user->tenant_id);
+
+            if (! $tenant || ! $tenant->isUsable()) {
+                throw ValidationException::withMessages([
+                    'email' => ['Akun perusahaan Anda nonaktif atau masa langganan telah berakhir. Hubungi administrator.'],
+                ]);
+            }
+        }
+
         $deviceName = $credentials['device_name'] ?? ($request->userAgent() ?: 'api-token');
 
         $token = $user->createToken($deviceName);
@@ -72,6 +82,7 @@ class AuthController extends ApiController
             'email_verified_at' => $user->email_verified_at,
             'phone' => optional($user->phones->firstWhere('primary', 1))->number,
             'role' => optional($user->roles->first())->name,
+            'tenant' => $this->transformTenant($user),
             'teams' => $user->crmTeams->map(function ($team) {
                 return [
                     'id' => $team->id,
@@ -79,6 +90,23 @@ class AuthController extends ApiController
                 ];
             })->values(),
         ];
+    }
+
+    protected function transformTenant($user): ?array
+    {
+        if (empty($user->tenant_id)) {
+            return null; // super admin
+        }
+
+        $t = \VentureDrake\LaravelCrm\Models\Tenant::find($user->tenant_id);
+
+        return $t ? [
+            'id' => $t->id,
+            'code' => $t->code,
+            'name' => $t->name,
+            'logo_url' => $t->logo_url,
+            'attendance_enforce_radius' => (bool) $t->attendance_enforce_radius,
+        ] : null;
     }
 
     public function changePassword(Request $request): JsonResponse

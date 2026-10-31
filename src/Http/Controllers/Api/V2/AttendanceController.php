@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Storage;
 use VentureDrake\LaravelCrm\Http\Requests\Api\V2\StoreAttendanceRequest;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\AttendanceResource;
 use VentureDrake\LaravelCrm\Models\Attendance;
+use VentureDrake\LaravelCrm\Models\Tenant;
+use VentureDrake\LaravelCrm\Models\WorkLocation;
 
 class AttendanceController extends ApiController
 {
@@ -94,6 +96,47 @@ class AttendanceController extends ApiController
             return response()->json(['message' => 'Anda belum Check In, atau sudah menyelesaikan absensi hari ini.'], 422);
         }
 
+        // --- Lokasi kerja per tenant ---
+        $lat = $request->input('latitude');
+        $lng = $request->input('longitude');
+        $workLocation = null;
+        $distance = null;
+        $within = null;
+
+        $locations = WorkLocation::query()->active()->get();
+
+        if ($locations->isNotEmpty() && $lat !== null && $lng !== null) {
+            foreach ($locations as $loc) {
+                $d = $loc->distanceTo((float) $lat, (float) $lng);
+
+                if ($distance === null || $d < $distance) {
+                    $distance = $d;
+                    $workLocation = $loc;
+                }
+            }
+
+            $within = $distance <= $workLocation->radius_meters;
+        }
+
+        $tenant = $request->user()->tenant_id ? Tenant::find($request->user()->tenant_id) : null;
+
+        if ($tenant && $tenant->attendance_enforce_radius && $locations->isNotEmpty()) {
+            if ($lat === null || $lng === null) {
+                return response()->json(['message' => 'Lokasi tidak terdeteksi. Aktifkan GPS lalu coba lagi.'], 422);
+            }
+
+            if (! $within) {
+                return response()->json([
+                    'message' => sprintf(
+                        'Anda berada %d m dari %s, di luar radius %d m.',
+                        round($distance),
+                        $workLocation->name,
+                        $workLocation->radius_meters
+                    ),
+                ], 422);
+            }
+        }
+
         $photoPath = null;
 
         if ($request->hasFile('photo')) {
@@ -107,6 +150,9 @@ class AttendanceController extends ApiController
             'latitude' => $request->input('latitude'),
             'longitude' => $request->input('longitude'),
             'address' => $request->input('address'),
+            'work_location_id' => $workLocation?->id,
+            'distance_meters' => $distance !== null ? (int) round($distance) : null,
+            'within_radius' => $within,
             'photo_path' => $photoPath,
             'notes' => $request->input('notes'),
         ]);

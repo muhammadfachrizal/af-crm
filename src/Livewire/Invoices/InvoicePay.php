@@ -47,6 +47,17 @@ class InvoicePay extends Component
 
     public function pay()
     {
+        // Input "amount" pakai x-mask:dynamic="$money($input)" di blade
+        // (invoice-pay.blade.php) buat format tampilan angkanya (mis.
+        // "2,000.00"), tapi karena wire:model nempel langsung ke input yang
+        // sama, Livewire ikutan nerima STRING BERFORMAT itu, bukan angka
+        // bersih — bikin validasi 'numeric'/'size' gagal walau nilainya
+        // kelihatan sama persis kayak yang di-auto-isi. Bersihkan dulu
+        // sebelum divalidasi.
+        if (is_string($this->amount)) {
+            $this->amount = $this->parseMaskedAmount($this->amount);
+        }
+
         $this->validate();
 
         $this->amount_due = ($this->invoice->amount_due / 100) - ($this->amount + ($this->invoice->amount_paid / 100));
@@ -64,6 +75,29 @@ class InvoicePay extends Component
         $this->resetFields();
 
         $this->showPayInvoice = false;
+    }
+
+    /**
+     * Ubah string uang berformat (mis. "2,000.00" atau "2.000,00") jadi
+     * float bersih. Nyari pemisah desimal dari titik/koma TERAKHIR yang
+     * diikuti 1-2 digit di ujung string — sisanya (pemisah ribuan) dibuang.
+     */
+    private function parseMaskedAmount(string $value): float
+    {
+        $value = trim(preg_replace('/[^0-9.,]/', '', $value));
+
+        if ($value === '') {
+            return 0.0;
+        }
+
+        if (preg_match('/^(.*)[.,](\d{1,2})$/', $value, $matches)) {
+            $integerPart = preg_replace('/[^0-9]/', '', $matches[1]);
+            $decimalPart = $matches[2];
+
+            return (float) ($integerPart.'.'.$decimalPart);
+        }
+
+        return (float) preg_replace('/[^0-9]/', '', $value);
     }
 
     private function resetFields()

@@ -21,6 +21,7 @@ use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\TimezoneController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\UserController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\AttendanceController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\VisitController;
+use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\WorkLocationController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\TaskController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\ActivityController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\DashboardController;
@@ -40,7 +41,7 @@ Route::post('auth/token', [AuthController::class, 'issueToken'])
 
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
 
-Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team'])->group(function () {
+Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team', 'laravel-crm.tenant'])->group(function () {
     Route::get('auth/me', [AuthController::class, 'me'])
         ->name('laravel-crm.api.v2.auth.me');
 
@@ -64,6 +65,14 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team'])->group(fu
     Route::apiResource('leads', LeadController::class)
         ->names('laravel-crm.api.v2.leads')
         ->scoped(['lead' => 'external_id']);
+
+    Route::post('leads/{lead:external_id}/convert', [LeadController::class, 'convert'])
+        ->name('laravel-crm.api.v2.leads.convert');
+
+    Route::apiResource('work-locations', WorkLocationController::class)
+        ->except(['show'])
+        ->parameters(['work-locations' => 'id'])
+        ->names('laravel-crm.api.v2.work-locations');
 
     Route::get('attendances/today', [AttendanceController::class, 'today'])
     ->name('laravel-crm.api.v2.attendances.today');
@@ -98,17 +107,43 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team'])->group(fu
         ->names('laravel-crm.api.v2.deals')
         ->scoped(['deal' => 'external_id']);
 
+    Route::post('deals/{deal:external_id}/won', [DealController::class, 'won'])
+        ->name('laravel-crm.api.v2.deals.won');
+    Route::post('deals/{deal:external_id}/lost', [DealController::class, 'lost'])
+        ->name('laravel-crm.api.v2.deals.lost');
+    Route::post('deals/{deal:external_id}/reopen', [DealController::class, 'reopen'])
+        ->name('laravel-crm.api.v2.deals.reopen');
+
     Route::apiResource('quotes', QuoteController::class)
         ->names('laravel-crm.api.v2.quotes')
         ->scoped(['quote' => 'external_id']);
+
+    Route::post('quotes/{quote:external_id}/accept', [QuoteController::class, 'accept'])
+        ->name('laravel-crm.api.v2.quotes.accept');
+    Route::post('quotes/{quote:external_id}/reject', [QuoteController::class, 'reject'])
+        ->name('laravel-crm.api.v2.quotes.reject');
+    Route::post('quotes/{quote:external_id}/unaccept', [QuoteController::class, 'unaccept'])
+        ->name('laravel-crm.api.v2.quotes.unaccept');
+    Route::post('quotes/{quote:external_id}/unreject', [QuoteController::class, 'unreject'])
+        ->name('laravel-crm.api.v2.quotes.unreject');
+    Route::post('quotes/{quote:external_id}/send', [QuoteController::class, 'send'])
+        ->name('laravel-crm.api.v2.quotes.send');
 
     Route::apiResource('orders', OrderController::class)
         ->names('laravel-crm.api.v2.orders')
         ->scoped(['order' => 'external_id']);
 
+    Route::post('orders/{order:external_id}/convert-to-invoice', [OrderController::class, 'convertToInvoice'])
+        ->name('laravel-crm.api.v2.orders.convert-to-invoice');
+
     Route::apiResource('invoices', InvoiceController::class)
         ->names('laravel-crm.api.v2.invoices')
         ->scoped(['invoice' => 'external_id']);
+
+    Route::post('invoices/{invoice:external_id}/pay', [InvoiceController::class, 'pay'])
+        ->name('laravel-crm.api.v2.invoices.pay');
+    Route::post('invoices/{invoice:external_id}/send', [InvoiceController::class, 'send'])
+        ->name('laravel-crm.api.v2.invoices.send');
 
     // --- Read-only lookup lists, dipakai buat isi dropdown/picker di client
     // (mobile app, dsb) yang sebelumnya cuma bisa diisi lewat Livewire web UI. ---

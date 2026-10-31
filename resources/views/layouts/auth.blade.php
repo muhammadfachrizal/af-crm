@@ -34,9 +34,24 @@
             </div>
 
             <div class="mt-6 flex items-center gap-3 text-sm text-base-content/50">
-                <span>&copy; {{ date('Y') }} | Powered by <a href="https://laravelcrm.com" target="_blank" rel="noopener noreferrer">Laravel CRM</a></span>
-                <x-mary-theme-toggle class="btn btn-ghost btn-xs" />
-            </div>
+    <span class="flex items-center gap-2">
+        &copy; {{ date('Y') }} | Powered by
+
+        <img
+            src="{{ asset('images/company-logo.png') }}"
+            alt="Company Logo"
+            class="h-5 w-auto object-contain block dark:hidden"
+        >
+
+        <img
+            src="{{ asset('images/company-logo-dark.png') }}"
+            alt="Company Logo"
+            class="h-5 w-auto object-contain hidden dark:inline"
+        >
+    </span>
+
+    <x-mary-theme-toggle class="btn btn-ghost btn-xs" />
+</div>
         </div>
 
         <x-mary-toast />

@@ -2,6 +2,7 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use App\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
@@ -11,6 +12,7 @@ use VentureDrake\LaravelCrm\Traits\SearchFilters;
 
 class Lunch extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
     use HasCrmFields;
     use HasGlobalSettings;

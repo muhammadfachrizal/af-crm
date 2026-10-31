@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use VentureDrake\LaravelCrm\Console\Commands\IssueApiToken;
+use VentureDrake\LaravelCrm\Console\Commands\TenantAssign;
+use VentureDrake\LaravelCrm\Console\Commands\TenantCreate;
 use VentureDrake\LaravelCrm\Console\LaravelCrmAddressTypes;
 use VentureDrake\LaravelCrm\Console\LaravelCrmAddUser;
 use VentureDrake\LaravelCrm\Console\LaravelCrmArchive;
@@ -89,6 +91,7 @@ use VentureDrake\LaravelCrm\Http\Livewire\SendInvoice;
 use VentureDrake\LaravelCrm\Http\Livewire\SendPurchaseOrder;
 use VentureDrake\LaravelCrm\Http\Livewire\SendQuote;
 use VentureDrake\LaravelCrm\Http\Middleware\Authenticate;
+use VentureDrake\LaravelCrm\Http\Middleware\EnsureTenantActive;
 use VentureDrake\LaravelCrm\Http\Middleware\ForceJsonResponse;
 use VentureDrake\LaravelCrm\Http\Middleware\FormComponentsConfig;
 use VentureDrake\LaravelCrm\Http\Middleware\HasCrmAccess;
@@ -538,6 +541,8 @@ class LaravelCrmServiceProvider extends ServiceProvider
         $router->aliasMiddleware('auth.laravel-crm', Authenticate::class);
         $router->aliasMiddleware('laravel-crm.api.json', ForceJsonResponse::class);
         $router->aliasMiddleware('laravel-crm.api.team', SetApiTeamContext::class);
+        $router->aliasMiddleware('laravel-crm.tenant', EnsureTenantActive::class);
+        $router->aliasMiddleware('laravel-crm.superadmin', \VentureDrake\LaravelCrm\Http\Middleware\EnsureSuperAdmin::class);
 
         RateLimiter::for('laravel-crm-api', function (Request $request) {
             return $request->user()
@@ -866,6 +871,8 @@ class LaravelCrmServiceProvider extends ServiceProvider
                 LaravelCrmSmsCampaignsDispatch::class,
                 LaravelCrmMonitorCheck::class,
                 IssueApiToken::class,
+                TenantCreate::class,
+                TenantAssign::class,
             ]);
 
         }
@@ -885,6 +892,10 @@ class LaravelCrmServiceProvider extends ServiceProvider
         // Livewire components
         Livewire::component('crm-attendance-index', AttendanceIndex::class);
         Livewire::component('crm-visit-index', VisitIndex::class);
+        Livewire::component('crm-tenant-index', \VentureDrake\LaravelCrm\Livewire\Tenants\TenantIndex::class);
+        Livewire::component('crm-tenant-dashboard', \VentureDrake\LaravelCrm\Livewire\Tenants\TenantDashboard::class);
+        Livewire::component('crm-work-location-index', \VentureDrake\LaravelCrm\Livewire\WorkLocations\WorkLocationIndex::class);
+        Livewire::component('crm-work-location-form', \VentureDrake\LaravelCrm\Livewire\WorkLocations\WorkLocationForm::class);
 		Livewire::component('crm-visit-create', VisitCreate::class);
         Livewire::component('phone-edit', LivePhoneEdit::class);
         Livewire::component('email-edit', LiveEmailEdit::class);

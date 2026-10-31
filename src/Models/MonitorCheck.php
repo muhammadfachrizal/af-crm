@@ -2,8 +2,10 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 class MonitorCheck extends Model
 {
+    use BelongsToTenant;
     protected $guarded = ['id'];
 
     protected $casts = [

@@ -2,6 +2,7 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use App\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
@@ -9,6 +10,7 @@ use Carbon\Carbon;
 
 class Attendance extends Model
 {
+    use BelongsToTenant;
     use SoftDeletes;
     use BelongsToTeams;
 
@@ -33,6 +35,9 @@ class Attendance extends Model
         'longitude',
         'address',
         'photo_path',
+        'work_location_id',
+        'distance_meters',
+        'within_radius',
         'notes',
         'user_id',
         'user_created_id',

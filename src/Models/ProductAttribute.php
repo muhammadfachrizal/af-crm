@@ -2,12 +2,14 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
 use VentureDrake\LaravelCrm\Traits\HasCrmFields;
 
 class ProductAttribute extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
     use HasCrmFields;
     use SoftDeletes;

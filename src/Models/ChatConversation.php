@@ -2,6 +2,7 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use App\User;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
@@ -11,6 +12,7 @@ use VentureDrake\LaravelCrm\Traits\SearchFilters;
 
 class ChatConversation extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
     use HasGlobalSettings;
     use SearchFilters;

@@ -2,6 +2,7 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
 use VentureDrake\LaravelCrm\Traits\HasCrmActivities;
@@ -12,6 +13,7 @@ use VentureDrake\LaravelCrm\Traits\SearchFilters;
 
 class Customer extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
     use HasCrmActivities;
     use HasCrmFields;

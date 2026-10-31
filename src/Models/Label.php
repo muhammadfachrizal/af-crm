@@ -2,12 +2,14 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
 
 class Label extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
     use SoftDeletes;
 

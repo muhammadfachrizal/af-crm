@@ -2,6 +2,7 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
 
@@ -11,6 +12,7 @@ use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
  */
 class ChatVisitorPageView extends EloquentModel
 {
+    use BelongsToTenant;
     use BelongsToTeams;
 
     public $timestamps = false;

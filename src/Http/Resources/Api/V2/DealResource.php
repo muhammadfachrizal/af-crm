@@ -25,6 +25,7 @@ class DealResource extends JsonResource
             'expected_close' => $this->expected_close
                 ? Carbon::parse($this->expected_close)->toIso8601String()
                 : null,
+            'closed_status' => $this->closed_status,
             'closed_at' => $this->closed_at
                 ? Carbon::parse($this->closed_at)->toIso8601String()
                 : null,

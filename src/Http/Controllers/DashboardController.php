@@ -13,6 +13,10 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        if (\VentureDrake\LaravelCrm\Support\CurrentTenant::isSuperAdmin()) {
+            return redirect()->route('laravel-crm.tenants.dashboard');
+        }
+
         return view('laravel-crm::index');
     }
 }

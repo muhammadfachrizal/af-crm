@@ -2,6 +2,7 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use App\Models\User;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
 use VentureDrake\LaravelCrm\Traits\HasCrmAddresses;
@@ -10,6 +11,7 @@ use VentureDrake\LaravelCrm\Traits\HasCrmPhones;
 
 class Setting extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
     use HasCrmAddresses;
     use HasCrmEmails;

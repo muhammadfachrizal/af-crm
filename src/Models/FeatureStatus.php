@@ -2,11 +2,13 @@
 
 namespace VentureDrake\LaravelCrm\Models;
 
+use VentureDrake\LaravelCrm\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use VentureDrake\LaravelCrm\Traits\BelongsToTeams;
 
 class FeatureStatus extends Model
 {
+    use BelongsToTenant;
     use BelongsToTeams;
     use SoftDeletes;
 
