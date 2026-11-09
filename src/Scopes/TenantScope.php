@@ -17,19 +17,10 @@ class TenantScope implements Scope
         $tenantId = CurrentTenant::id();
 
         if ($tenantId === null) {
-            return; // super admin / console
+            return; // console/job tanpa konteks tenant
         }
 
         $column = $model->getTable().'.tenant_id';
-
-        // Role boleh punya "template global" (tenant_id NULL) yang dipakai semua tenant.
-        if ($model instanceof \Spatie\Permission\Models\Role) {
-            $builder->where(function ($q) use ($column, $tenantId) {
-                $q->where($column, $tenantId)->orWhereNull($column);
-            });
-
-            return;
-        }
 
         $builder->where($column, $tenantId);
     }

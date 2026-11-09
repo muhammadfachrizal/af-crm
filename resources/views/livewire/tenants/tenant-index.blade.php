@@ -33,6 +33,7 @@
 
             @scope('cell_actions', $tenant)
                 <div class="flex gap-1 justify-end">
+                    <x-mary-button icon="o-arrow-right-end-on-rectangle" class="btn-ghost btn-sm" tooltip="Bekerja sebagai tenant ini" wire:click="enter({{ $tenant->id }})" />
                     <x-mary-button icon="o-pencil" class="btn-ghost btn-sm" tooltip="Ubah" wire:click="openEdit({{ $tenant->id }})" />
                     <x-mary-button :icon="$tenant->status === 'active' ? 'o-no-symbol' : 'o-check-circle'" class="btn-ghost btn-sm"
                                    :tooltip="$tenant->status === 'active' ? 'Nonaktifkan' : 'Aktifkan'"
@@ -58,7 +59,10 @@
                 <x-mary-input type="date" label="Kedaluwarsa" wire:model="expires_at" />
             </div>
             <x-mary-input type="number" label="Batas jumlah user" wire:model="max_users" hint="Kosongkan = tanpa batas" />
+            <x-mary-select label="Zona waktu" wire:model="timezone" :options="[['id' => 'Asia/Jakarta', 'name' => 'WIB (Asia/Jakarta)'], ['id' => 'Asia/Makassar', 'name' => 'WITA (Asia/Makassar)'], ['id' => 'Asia/Jayapura', 'name' => 'WIT (Asia/Jayapura)']]" />
             <x-mary-toggle label="Absensi wajib dalam radius Lokasi Kerja" wire:model="attendance_enforce_radius" />
+            <x-mary-toggle label="Blokir lokasi palsu (fake GPS)" wire:model="block_mock_location" />
+            <x-mary-toggle label="Kunci akun ke satu perangkat" wire:model="bind_device" />
 
             @if(! $editingId)
                 <hr class="my-2">

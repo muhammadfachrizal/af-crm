@@ -8,13 +8,24 @@ use VentureDrake\LaravelCrm\Models\Tenant;
 
 /**
  * Tolak request API kalau perusahaan (tenant) user nonaktif / langganannya habis.
- * Super admin (tenant_id NULL) selalu lolos.
+ * Super admin selalu lolos.
  */
 class EnsureTenantActive
 {
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
+
+        // Super admin boleh bekerja di tenant lain lewat header X-Tenant-Id (mis. untuk support).
+        if ($user && ! empty($user->is_super_admin)) {
+            if ($id = (int) $request->header('X-Tenant-Id')) {
+                if (Tenant::find($id)) {
+                    \VentureDrake\LaravelCrm\Support\CurrentTenant::actAs($id);
+                }
+            }
+
+            return $next($request);
+        }
 
         if ($user && ! empty($user->tenant_id)) {
             $tenant = Tenant::find($user->tenant_id);

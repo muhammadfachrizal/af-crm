@@ -25,7 +25,7 @@ class NumberGeneratorService
      */
     public static function next(string $modelClass, int $startAt = 1000, int $lockSeconds = 10, int $waitSeconds = 5): int
     {
-        $key = 'laravel-crm:next-number:'.str_replace('\\', '_', $modelClass);
+        $key = 'laravel-crm:next-number:t'.(\VentureDrake\LaravelCrm\Support\CurrentTenant::id() ?? 0).':'.str_replace('\\', '_', $modelClass);
         $lockKey = $key.':lock';
         $counterKey = $key.':counter';
 
@@ -59,7 +59,7 @@ class NumberGeneratorService
      */
     public static function reset(string $modelClass): void
     {
-        $key = 'laravel-crm:next-number:'.str_replace('\\', '_', $modelClass);
+        $key = 'laravel-crm:next-number:t'.(\VentureDrake\LaravelCrm\Support\CurrentTenant::id() ?? 0).':'.str_replace('\\', '_', $modelClass);
         Cache::forget($key.':counter');
     }
 }

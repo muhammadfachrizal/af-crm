@@ -66,7 +66,16 @@ class TenantDashboard extends Component
             'days_left' => $t->expires_at ? now()->startOfDay()->diffInDays($t->expires_at->startOfDay(), false) : null,
         ]);
 
+        $audits = Schema::hasTable('crm_tenant_audits')
+            ? DB::table('crm_tenant_audits')
+                ->leftJoin('users', 'users.id', '=', 'crm_tenant_audits.user_id')
+                ->leftJoin('crm_tenants', 'crm_tenants.id', '=', 'crm_tenant_audits.tenant_id')
+                ->orderByDesc('crm_tenant_audits.id')->limit(10)
+                ->get(['crm_tenant_audits.*', 'users.name as user_name', 'crm_tenants.name as tenant_name'])
+            : collect();
+
         return view('laravel-crm::livewire.tenants.tenant-dashboard', [
+            'audits' => $audits,
             'rows' => $rows,
             'total' => $tenants->count(),
             'active' => $rows->where('usable', true)->count(),

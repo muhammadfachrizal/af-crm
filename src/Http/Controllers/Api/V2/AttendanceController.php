@@ -7,7 +7,9 @@ use Illuminate\Support\Facades\Storage;
 use VentureDrake\LaravelCrm\Http\Requests\Api\V2\StoreAttendanceRequest;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\AttendanceResource;
 use VentureDrake\LaravelCrm\Models\Attendance;
+use VentureDrake\LaravelCrm\Models\Shift;
 use VentureDrake\LaravelCrm\Models\Tenant;
+use VentureDrake\LaravelCrm\Support\AttendanceRules;
 use VentureDrake\LaravelCrm\Models\WorkLocation;
 
 class AttendanceController extends ApiController
@@ -65,6 +67,21 @@ class AttendanceController extends ApiController
         return $attendance
             ? new AttendanceResource($attendance)
             : response()->json(['data' => null]);
+    }
+
+    /** Shift milik user yang login (untuk ditampilkan di mobile). */
+    public function shift(Request $request)
+    {
+        $shift = Shift::forUser($request->user());
+
+        return response()->json(['data' => $shift ? [
+            'id' => $shift->external_id,
+            'name' => $shift->name,
+            'start_time' => $shift->start_time,
+            'end_time' => $shift->end_time,
+            'working_days' => $shift->working_days ?: [1, 2, 3, 4, 5],
+            'late_tolerance_minutes' => $shift->late_tolerance_minutes,
+        ] : null]);
     }
 
     public function show(Attendance $attendance)
@@ -137,6 +154,28 @@ class AttendanceController extends ApiController
             }
         }
 
+        // --- Anti fake GPS & kunci perangkat ---
+        if ($tenant && $tenant->block_mock_location && $request->boolean('is_mocked')) {
+            return response()->json(['message' => 'Lokasi palsu (mock location) terdeteksi. Matikan aplikasi fake GPS lalu coba lagi.'], 422);
+        }
+
+        if ($tenant && $tenant->bind_device && $request->filled('device_id')) {
+            $bound = $request->user()->bound_device_id;
+
+            if (! $bound) {
+                \Illuminate\Support\Facades\DB::table('users')->where('id', $request->user()->id)
+                    ->update(['bound_device_id' => $request->input('device_id')]);
+            } elseif ($bound !== $request->input('device_id')) {
+                return response()->json(['message' => 'Akun ini terikat ke perangkat lain. Hubungi admin untuk mereset perangkat.'], 422);
+            }
+        }
+
+        // --- Aturan shift: telat / pulang cepat / lembur ---
+        $recordedAt = \Carbon\Carbon::parse($request->input('recorded_at', now()));
+        $timezone = ($tenant->timezone ?? null) ?: config('app.timezone', 'UTC');
+        $shift = Shift::forUser($request->user());
+        $rule = AttendanceRules::evaluate($shift, $type, $recordedAt, $timezone);
+
         $photoPath = null;
 
         if ($request->hasFile('photo')) {
@@ -151,6 +190,13 @@ class AttendanceController extends ApiController
             'longitude' => $request->input('longitude'),
             'address' => $request->input('address'),
             'work_location_id' => $workLocation?->id,
+            'shift_id' => $shift?->id,
+            'late_minutes' => $rule['late'],
+            'early_leave_minutes' => $rule['early'],
+            'overtime_minutes' => $rule['overtime'],
+            'status' => $rule['status'],
+            'is_mocked' => $request->boolean('is_mocked'),
+            'device_id' => $request->input('device_id'),
             'distance_meters' => $distance !== null ? (int) round($distance) : null,
             'within_radius' => $within,
             'photo_path' => $photoPath,

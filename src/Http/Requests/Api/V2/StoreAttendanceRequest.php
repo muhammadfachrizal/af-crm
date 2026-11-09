@@ -21,6 +21,8 @@ class StoreAttendanceRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'photo' => ['nullable', 'image', 'max:5120'],
             'notes' => ['nullable', 'string'],
+            'is_mocked' => ['nullable', 'boolean'],
+            'device_id' => ['nullable', 'string', 'max:100'],
         ];
     }
 }

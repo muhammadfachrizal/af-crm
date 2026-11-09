@@ -45,7 +45,10 @@ class TenantProvisioner
 
         $tenant = \VentureDrake\LaravelCrm\Models\Tenant::create($data);
 
-        CurrentTenant::withoutTenancy(fn () => $this->cloneDefaults($templateId, $tenant->id));
+        CurrentTenant::withoutTenancy(function () use ($templateId, $tenant) {
+            $this->cloneDefaults($templateId, $tenant->id);
+            $this->cloneRoles($templateId, $tenant->id);
+        });
 
         $user = null;
 
@@ -62,9 +65,10 @@ class TenantProvisioner
 
                 if (method_exists($user, 'assignRole')) {
                     try {
-                        $user->assignRole('Admin');
+                        // dijalankan dalam konteks tenant baru -> memakai role "Admin" milik tenant itu
+                        CurrentTenant::runAs($tenant->id, fn () => $user->assignRole('Admin'));
                     } catch (\Throwable $e) {
-                        // role "Admin" belum ada -> atur manual lewat Roles
+                        // role "Admin" belum ada di tenant template -> atur manual lewat menu Roles
                     }
                 }
 
@@ -73,6 +77,41 @@ class TenantProvisioner
         }
 
         return [$tenant, $user];
+    }
+
+    /** Salin role + permission-nya dari tenant template (nama role boleh sama antar tenant). */
+    public function cloneRoles(int $fromTenantId, int $toTenantId): int
+    {
+        $rolesTable = config('permission.table_names.roles', 'roles');
+        $pivot = config('permission.table_names.role_has_permissions', 'role_has_permissions');
+        $roleKey = config('permission.column_names.role_pivot_key') ?? 'role_id';
+
+        if (! Schema::hasTable($rolesTable) || ! Schema::hasColumn($rolesTable, 'tenant_id')) {
+            return 0;
+        }
+
+        $count = 0;
+
+        foreach (DB::table($rolesTable)->where('tenant_id', $fromTenantId)->get() as $row) {
+            $data = (array) $row;
+            $oldId = $data['id'];
+            unset($data['id']);
+            $data['tenant_id'] = $toTenantId;
+
+            if (array_key_exists('external_id', $data)) {
+                $data['external_id'] = (string) Str::uuid();
+            }
+
+            $newId = DB::table($rolesTable)->insertGetId($data);
+
+            foreach (DB::table($pivot)->where($roleKey, $oldId)->get() as $perm) {
+                DB::table($pivot)->insert([$roleKey => $newId, 'permission_id' => $perm->permission_id]);
+            }
+
+            $count++;
+        }
+
+        return $count;
     }
 
     public function cloneDefaults(int $fromTenantId, int $toTenantId): array

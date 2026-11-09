@@ -39,6 +39,8 @@ Route::group(['prefix' => 'attendances', 'middleware' => 'auth.laravel-crm'], fu
 Route::group(['prefix' => 'tenants', 'middleware' => ['auth.laravel-crm', 'laravel-crm.superadmin']], function () {
     Route::get('', 'VentureDrake\LaravelCrm\Http\Controllers\TenantController@index')
         ->name('laravel-crm.tenants.index');
+    Route::post('leave', 'VentureDrake\LaravelCrm\Http\Controllers\TenantController@leave')
+        ->name('laravel-crm.tenants.leave');
     Route::get('dashboard', 'VentureDrake\LaravelCrm\Http\Controllers\TenantController@dashboard')
         ->name('laravel-crm.tenants.dashboard');
 });
@@ -55,6 +57,17 @@ Route::group(['prefix' => 'work-locations', 'middleware' => 'auth.laravel-crm'],
     Route::get('{id}/edit', 'VentureDrake\LaravelCrm\Http\Controllers\WorkLocationController@edit')
         ->name('laravel-crm.work-locations.edit')
         ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
+});
+
+/* Shift & Rekap Absensi */
+
+Route::group(['middleware' => ['auth.laravel-crm', 'can:viewAny,VentureDrake\\LaravelCrm\\Models\\Attendance']], function () {
+    Route::get('attendance-recap', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@index')
+        ->name('laravel-crm.attendance-recap.index');
+    Route::get('attendance-recap/export', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@export')
+        ->name('laravel-crm.attendance-recap.export');
+    Route::get('shifts', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@shifts')
+        ->name('laravel-crm.shifts.index');
 });
 
 /* Visits */

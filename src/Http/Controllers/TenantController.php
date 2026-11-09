@@ -13,4 +13,12 @@ class TenantController extends Controller
     {
         return view('laravel-crm::tenants.dashboard');
     }
+
+    public function leave()
+    {
+        session()->forget('acting_tenant_id');
+        \VentureDrake\LaravelCrm\Support\TenantAuditLog::record('tenant.leave');
+
+        return redirect()->route('laravel-crm.tenants.index');
+    }
 }

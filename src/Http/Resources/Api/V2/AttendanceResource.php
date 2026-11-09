@@ -18,6 +18,10 @@ class AttendanceResource extends JsonResource
             'address' => $this->address,
             'photo_url' => $this->photo_path ? asset('storage/'.$this->photo_path) : null,
             'notes' => $this->notes,
+            'status' => $this->status,
+            'late_minutes' => $this->late_minutes,
+            'early_leave_minutes' => $this->early_leave_minutes,
+            'overtime_minutes' => $this->overtime_minutes,
             'distance_meters' => $this->distance_meters,
             'within_radius' => $this->within_radius,
             'work_location' => $this->work_location_id

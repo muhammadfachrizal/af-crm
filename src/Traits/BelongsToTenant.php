@@ -23,6 +23,10 @@ trait BelongsToTenant
                 $model->tenant_id = $tenantId;
             }
         });
+
+        static::retrieved(function (Model $model) {
+            CurrentTenant::observeRetrieved($model);
+        });
     }
 
     // Sengaja bernama tenant(), bukan customer(): model Customer CRM (klien) sudah ada di package ini.

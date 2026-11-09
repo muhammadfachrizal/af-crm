@@ -74,6 +74,9 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team', 'laravel-c
         ->parameters(['work-locations' => 'id'])
         ->names('laravel-crm.api.v2.work-locations');
 
+    Route::get('attendances/shift', [AttendanceController::class, 'shift'])
+        ->name('laravel-crm.api.v2.attendances.shift');
+
     Route::get('attendances/today', [AttendanceController::class, 'today'])
     ->name('laravel-crm.api.v2.attendances.today');
 

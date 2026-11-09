@@ -13,51 +13,37 @@ class WorkLocationIndex extends Component
     use Toast, WithPagination;
 
     public bool $enforce = false;
-    public bool $canManage = false;
-    public bool $hasTenant = false;
 
     public function mount(): void
     {
-        abort_unless(
-            auth()->user()->hasPermissionTo('view crm attendances'),
-            403
-        );
-
-        $user = auth()->user();
-
-        $this->canManage = $user->hasPermissionTo('edit crm attendances');
-        $this->hasTenant = (bool) $user->tenant_id;
+        abort_unless(auth()->user()->hasPermissionTo('view crm attendances'), 403);
 
         $this->enforce = (bool) optional($this->tenant())->attendance_enforce_radius;
     }
 
     protected function tenant(): ?Tenant
     {
-        return auth()->user()->tenant_id
-            ? Tenant::find(auth()->user()->tenant_id)
-            : null;
+        return auth()->user()->tenant_id ? Tenant::find(auth()->user()->tenant_id) : null;
+    }
+
+    public function canManage(): bool
+    {
+        return auth()->user()->hasPermissionTo('edit crm attendances');
     }
 
     public function updatedEnforce($value): void
     {
-        abort_unless($this->canManage, 403);
+        abort_unless($this->canManage(), 403);
 
         if ($t = $this->tenant()) {
-            $t->update([
-                'attendance_enforce_radius' => (bool) $value,
-            ]);
-
-            $this->success(
-                $value
-                    ? 'Absensi sekarang wajib dalam radius.'
-                    : 'Radius hanya dicatat (tidak memblokir).'
-            );
+            $t->update(['attendance_enforce_radius' => (bool) $value]);
+            $this->success($value ? 'Absensi sekarang wajib dalam radius.' : 'Radius hanya dicatat (tidak memblokir).');
         }
     }
 
     public function toggleActive(int $id): void
     {
-        abort_unless($this->canManage, 403);
+        abort_unless($this->canManage(), 403);
 
         $l = WorkLocation::findOrFail($id);
         $l->update(['is_active' => ! $l->is_active]);
@@ -65,10 +51,9 @@ class WorkLocationIndex extends Component
 
     public function delete(int $id): void
     {
-        abort_unless($this->canManage, 403);
+        abort_unless($this->canManage(), 403);
 
         WorkLocation::findOrFail($id)->delete();
-
         $this->success('Lokasi kerja dihapus.');
     }
 
@@ -84,6 +69,8 @@ class WorkLocationIndex extends Component
                 ['key' => 'is_active', 'label' => 'Status', 'sortable' => false],
                 ['key' => 'actions', 'label' => '', 'sortable' => false],
             ],
+            'canManage' => $this->canManage(),
+            'hasTenant' => (bool) auth()->user()->tenant_id,
         ]);
     }
 }

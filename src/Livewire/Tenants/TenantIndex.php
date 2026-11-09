@@ -9,6 +9,7 @@ use Livewire\WithPagination;
 use Mary\Traits\Toast;
 use VentureDrake\LaravelCrm\Models\Tenant;
 use VentureDrake\LaravelCrm\Support\CurrentTenant;
+use VentureDrake\LaravelCrm\Support\TenantAuditLog;
 use VentureDrake\LaravelCrm\Support\TenantProvisioner;
 
 class TenantIndex extends Component
@@ -40,6 +41,12 @@ class TenantIndex extends Component
     public $max_users = null;
 
     public bool $attendance_enforce_radius = false;
+
+    public string $timezone = 'Asia/Jakarta';
+
+    public bool $block_mock_location = true;
+
+    public bool $bind_device = false;
 
     // Admin awal (hanya saat membuat tenant)
     public bool $create_admin = true;
@@ -84,6 +91,9 @@ class TenantIndex extends Component
         ]);
         $this->status = 'active';
         $this->attendance_enforce_radius = false;
+        $this->timezone = 'Asia/Jakarta';
+        $this->block_mock_location = true;
+        $this->bind_device = false;
         $this->create_admin = true;
         $this->template_id = (int) (Tenant::orderBy('id')->value('id') ?? 1);
         $this->resetValidation();
@@ -112,6 +122,9 @@ class TenantIndex extends Component
         $this->expires_at = $t->expires_at?->format('Y-m-d');
         $this->max_users = $t->max_users;
         $this->attendance_enforce_radius = (bool) $t->attendance_enforce_radius;
+        $this->timezone = $t->timezone ?: 'Asia/Jakarta';
+        $this->block_mock_location = (bool) $t->block_mock_location;
+        $this->bind_device = (bool) $t->bind_device;
         $this->showForm = true;
     }
 
@@ -125,6 +138,7 @@ class TenantIndex extends Component
             'starts_at' => ['nullable', 'date'],
             'expires_at' => ['nullable', 'date'],
             'max_users' => ['nullable', 'integer', 'min:1'],
+            'timezone' => ['required', 'timezone'],
         ];
 
         if (! $this->editingId && $this->create_admin) {
@@ -145,12 +159,16 @@ class TenantIndex extends Component
             'expires_at' => $this->expires_at ?: null,
             'max_users' => $this->max_users ?: null,
             'attendance_enforce_radius' => $this->attendance_enforce_radius,
+            'timezone' => $this->timezone,
+            'block_mock_location' => $this->block_mock_location,
+            'bind_device' => $this->bind_device,
         ];
 
         if ($this->editingId) {
             $t = Tenant::findOrFail($this->editingId);
             $data['code'] = strtoupper($data['code'] ?? $t->code);
             $t->update($data);
+            TenantAuditLog::record('tenant.updated', $t->id, ['name' => $t->name]);
             $this->success('Tenant diperbarui.');
             $this->showForm = false;
 
@@ -167,6 +185,8 @@ class TenantIndex extends Component
             $this->template_id
         );
 
+        TenantAuditLog::record('tenant.created', $tenant->id, ['name' => $tenant->name]);
+
         $this->createdInfo = $user
             ? "Tenant {$tenant->name} dibuat. Login admin: {$user->email} / {$this->admin_password}"
             : "Tenant {$tenant->name} dibuat.";
@@ -175,10 +195,21 @@ class TenantIndex extends Component
         $this->showForm = false;
     }
 
+    /** Super admin bekerja di tenant ini: semua data & data baru memakai tenant tsb. */
+    public function enter(int $id)
+    {
+        $t = Tenant::findOrFail($id);
+        session(['acting_tenant_id' => $t->id]);
+        TenantAuditLog::record('tenant.enter', $t->id);
+
+        return redirect()->route('laravel-crm.dashboard');
+    }
+
     public function toggleStatus(int $id): void
     {
         $t = Tenant::findOrFail($id);
         $t->update(['status' => $t->status === 'active' ? 'suspended' : 'active']);
+        TenantAuditLog::record('tenant.'.$t->status, $t->id);
         $this->success($t->status === 'active' ? 'Tenant diaktifkan.' : 'Tenant dinonaktifkan.');
     }
 

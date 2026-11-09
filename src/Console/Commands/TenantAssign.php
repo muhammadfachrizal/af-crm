@@ -10,10 +10,11 @@ class TenantAssign extends Command
 {
     protected $signature = 'laravelcrm:tenant-assign
         {email : Email user}
-        {tenant? : ID tenant (kosongkan + --super untuk super admin)}
-        {--super : Jadikan super admin (tenant_id NULL, melihat semua tenant)}';
+        {tenant? : ID tenant (default: tenant user saat ini, atau 1)}
+        {--super : Jadikan super admin (tetap punya tenant_id; bisa masuk ke tenant lain)}
+        {--revoke-super : Cabut hak super admin}';
 
-    protected $description = 'Pindahkan user ke tenant tertentu, atau jadikan super admin';
+    protected $description = 'Pindahkan user ke tenant tertentu, atau atur hak super admin';
 
     public function handle(): int
     {
@@ -27,14 +28,8 @@ class TenantAssign extends Command
             return self::FAILURE;
         }
 
-        if ($this->option('super')) {
-            $user->forceFill(['tenant_id' => null])->save();
-            $this->info("{$user->email} sekarang SUPER ADMIN (lihat semua tenant).");
-
-            return self::SUCCESS;
-        }
-
-        $tenant = Tenant::find($this->argument('tenant'));
+        $tenantId = $this->argument('tenant') ?: ($user->tenant_id ?: 1);
+        $tenant = Tenant::find($tenantId);
 
         if (! $tenant) {
             $this->error('Tenant tidak ditemukan.');
@@ -42,8 +37,19 @@ class TenantAssign extends Command
             return self::FAILURE;
         }
 
-        $user->forceFill(['tenant_id' => $tenant->id])->save();
-        $this->info("{$user->email} dipindahkan ke tenant #{$tenant->id} ({$tenant->name}).");
+        $user->forceFill(['tenant_id' => $tenant->id]);
+
+        if ($this->option('super')) {
+            $user->forceFill(['is_super_admin' => true]);
+        }
+
+        if ($this->option('revoke-super')) {
+            $user->forceFill(['is_super_admin' => false]);
+        }
+
+        $user->save();
+
+        $this->info("{$user->email}: tenant #{$tenant->id} ({$tenant->name})".($user->is_super_admin ? ', SUPER ADMIN' : '').'.');
 
         return self::SUCCESS;
     }

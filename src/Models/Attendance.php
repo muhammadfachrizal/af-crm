@@ -38,6 +38,13 @@ class Attendance extends Model
         'work_location_id',
         'distance_meters',
         'within_radius',
+        'shift_id',
+        'late_minutes',
+        'early_leave_minutes',
+        'overtime_minutes',
+        'status',
+        'is_mocked',
+        'device_id',
         'notes',
         'user_id',
         'user_created_id',
@@ -78,11 +85,11 @@ class Attendance extends Model
 
     public function scopeToday($query)
     {
-        $start = Carbon::today('Asia/Jakarta')
+        $start = Carbon::today(\VentureDrake\LaravelCrm\Support\AttendanceRecapService::timezone())
             ->startOfDay()
             ->utc();
 
-        $end = Carbon::today('Asia/Jakarta')
+        $end = Carbon::today(\VentureDrake\LaravelCrm\Support\AttendanceRecapService::timezone())
             ->endOfDay()
             ->utc();
 

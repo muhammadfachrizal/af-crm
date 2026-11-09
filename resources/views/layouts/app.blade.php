@@ -568,6 +568,16 @@
                                 icon="fas.location-dot"
                                 link="{{ url(route('laravel-crm.work-locations.index')) }}"
                             />
+                            <x-mary-menu-item
+                                title="Shift Kerja"
+                                icon="fas.business-time"
+                                link="{{ url(route('laravel-crm.shifts.index')) }}"
+                            />
+                            <x-mary-menu-item
+                                title="Rekap Absensi"
+                                icon="fas.table-list"
+                                link="{{ url(route('laravel-crm.attendance-recap.index')) }}"
+                            />
                         @endcan
 
                         @can('view crm visits')
@@ -946,6 +956,16 @@
             @if (isset($header))
                 {{ $header }}
             @endif
+            @if(\VentureDrake\LaravelCrm\Support\CurrentTenant::isActingAsOther())
+                <div class="alert alert-warning mb-4 flex justify-between items-center">
+                    <span>Anda bekerja sebagai tenant <strong>{{ optional(\VentureDrake\LaravelCrm\Models\Tenant::find(\VentureDrake\LaravelCrm\Support\CurrentTenant::id()))->name }}</strong>. Data yang Anda buat akan menjadi milik tenant ini.</span>
+                    <form method="POST" action="{{ url(route('laravel-crm.tenants.leave')) }}">
+                        @csrf
+                        <button class="btn btn-sm">Kembali ke tenant saya</button>
+                    </form>
+                </div>
+            @endif
+
             {{ $slot ?? null }}
         </x-slot:content>
     </x-mary-main>

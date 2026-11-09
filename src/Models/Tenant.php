@@ -20,6 +20,8 @@ class Tenant extends Model
         'starts_at' => 'date',
         'expires_at' => 'date',
         'attendance_enforce_radius' => 'boolean',
+        'block_mock_location' => 'boolean',
+        'bind_device' => 'boolean',
         'max_users' => 'integer',
     ];
 

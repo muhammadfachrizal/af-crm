@@ -60,4 +60,23 @@
             </table>
         </div>
     </x-mary-card>
+
+    <x-mary-card title="Aktivitas Super Admin (10 terakhir)" shadow class="mt-4">
+        <table class="table table-sm">
+            <thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Tenant</th><th>IP</th></tr></thead>
+            <tbody>
+            @forelse($audits as $a)
+                <tr>
+                    <td>{{ \Carbon\Carbon::parse($a->created_at)->format('d M Y H:i') }}</td>
+                    <td>{{ $a->user_name ?? '-' }}</td>
+                    <td>{{ $a->action }}</td>
+                    <td>{{ $a->tenant_name ?? '-' }}</td>
+                    <td>{{ $a->ip }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="opacity-60">Belum ada aktivitas.</td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </x-mary-card>
 </div>

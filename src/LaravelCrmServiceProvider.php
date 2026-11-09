@@ -517,6 +517,17 @@ class LaravelCrmServiceProvider extends ServiceProvider
      */
     public function boot(Router $router, Filesystem $filesystem)
     {
+        // --- Multi tenant: bawa tenant_id ke queue job & bersihkan konteks per request ---
+        \Illuminate\Support\Facades\Queue::createPayloadUsing(fn () => [
+            'tenant_id' => \VentureDrake\LaravelCrm\Support\CurrentTenant::id(),
+        ]);
+        \Illuminate\Support\Facades\Queue::before(function (\Illuminate\Queue\Events\JobProcessing $event) {
+            \VentureDrake\LaravelCrm\Support\CurrentTenant::setJobContext($event->job->payload()['tenant_id'] ?? null);
+        });
+        \Illuminate\Support\Facades\Queue::after(fn () => \VentureDrake\LaravelCrm\Support\CurrentTenant::clearJobContext());
+        \Illuminate\Support\Facades\Queue::failing(fn () => \VentureDrake\LaravelCrm\Support\CurrentTenant::clearJobContext());
+        $this->app->terminating(fn () => \VentureDrake\LaravelCrm\Support\CurrentTenant::clearContext());
+
         Paginator::useBootstrap();
 
         if (class_exists('App\Models\User') && ! class_exists('App\User')) {
@@ -895,6 +906,8 @@ class LaravelCrmServiceProvider extends ServiceProvider
         Livewire::component('crm-tenant-index', \VentureDrake\LaravelCrm\Livewire\Tenants\TenantIndex::class);
         Livewire::component('crm-tenant-dashboard', \VentureDrake\LaravelCrm\Livewire\Tenants\TenantDashboard::class);
         Livewire::component('crm-work-location-index', \VentureDrake\LaravelCrm\Livewire\WorkLocations\WorkLocationIndex::class);
+        Livewire::component('crm-shift-index', \VentureDrake\LaravelCrm\Livewire\Shifts\ShiftIndex::class);
+        Livewire::component('crm-attendance-recap', \VentureDrake\LaravelCrm\Livewire\Attendances\AttendanceRecap::class);
         Livewire::component('crm-work-location-form', \VentureDrake\LaravelCrm\Livewire\WorkLocations\WorkLocationForm::class);
 		Livewire::component('crm-visit-create', VisitCreate::class);
         Livewire::component('phone-edit', LivePhoneEdit::class);
