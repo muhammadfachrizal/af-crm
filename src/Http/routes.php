@@ -59,6 +59,17 @@ Route::group(['prefix' => 'work-locations', 'middleware' => 'auth.laravel-crm'],
         ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
 });
 
+/* Laporan */
+
+Route::group(['prefix' => 'reports', 'middleware' => ['auth.laravel-crm', 'can:viewAny,VentureDrake\\LaravelCrm\\Models\\Deal']], function () {
+    Route::get('', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\ReportController@index')
+        ->name('laravel-crm.reports.index');
+    Route::get('{key}/export/{format}', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\ReportController@export')
+        ->name('laravel-crm.reports.export');
+    Route::get('{key}', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\ReportController@show')
+        ->name('laravel-crm.reports.show');
+});
+
 /* Shift & Rekap Absensi */
 
 Route::group(['middleware' => ['auth.laravel-crm', 'can:viewAny,VentureDrake\\LaravelCrm\\Models\\Attendance']], function () {
@@ -66,6 +77,10 @@ Route::group(['middleware' => ['auth.laravel-crm', 'can:viewAny,VentureDrake\\La
         ->name('laravel-crm.attendance-recap.index');
     Route::get('attendance-recap/export', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@export')
         ->name('laravel-crm.attendance-recap.export');
+    Route::get('holidays', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@holidays')
+        ->name('laravel-crm.holidays.index');
+    Route::get('push-notifications', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@push')
+        ->name('laravel-crm.push-notifications.index');
     Route::get('shifts', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@shifts')
         ->name('laravel-crm.shifts.index');
 });

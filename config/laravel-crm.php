@@ -279,4 +279,9 @@ return [
     */
     'tenancy' => env('LARAVEL_CRM_TENANCY', true),
 
+    // Push notification (FCM HTTP v1). Isi path file JSON service account.
+    'fcm' => [
+        'credentials' => env('LARAVEL_CRM_FCM_CREDENTIALS'),
+    ],
+
 ];

@@ -69,6 +69,46 @@ class AttendanceController extends ApiController
             : response()->json(['data' => null]);
     }
 
+    /**
+     * Jadwal untuk alarm absen di mobile: shift, zona waktu, menit pengingat,
+     * tanggal libur tenant & tanggal cuti/izin user untuk N hari ke depan.
+     */
+    public function schedule(Request $request)
+    {
+        $days = min(60, max(1, (int) $request->query('days', 30)));
+        $user = $request->user();
+        $tenant = $user->tenant_id ? Tenant::find(\VentureDrake\LaravelCrm\Support\CurrentTenant::id() ?? $user->tenant_id) : null;
+        $tz = ($tenant->timezone ?? null) ?: config('app.timezone', 'UTC');
+        $from = \Carbon\Carbon::now($tz)->startOfDay();
+        $to = $from->copy()->addDays($days);
+
+        $holidays = \VentureDrake\LaravelCrm\Models\Holiday::whereBetween('date', [$from->toDateString(), $to->toDateString()])
+            ->get()->map(fn ($h) => $h->date->toDateString())->values();
+
+        $leaveDates = [];
+        foreach (\VentureDrake\LaravelCrm\Models\Leave::where('user_id', $user->id)
+            ->where('end_date', '>=', $from->toDateString())->where('start_date', '<=', $to->toDateString())->get() as $lv) {
+            for ($d = $lv->start_date->copy(); $d->lte($lv->end_date); $d->addDay()) {
+                $leaveDates[] = $d->toDateString();
+            }
+        }
+
+        $shift = Shift::forUser($user);
+
+        return response()->json(['data' => [
+            'timezone' => $tz,
+            'reminder_minutes' => (int) ($tenant->attendance_reminder_minutes ?? 15),
+            'shift' => $shift ? [
+                'name' => $shift->name,
+                'start_time' => $shift->start_time,
+                'end_time' => $shift->end_time,
+                'working_days' => array_map('intval', $shift->working_days ?: [1, 2, 3, 4, 5]),
+            ] : null,
+            'holidays' => $holidays,
+            'leaves' => array_values(array_unique($leaveDates)),
+        ]]);
+    }
+
     /** Shift milik user yang login (untuk ditampilkan di mobile). */
     public function shift(Request $request)
     {

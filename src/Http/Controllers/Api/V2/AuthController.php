@@ -106,6 +106,7 @@ class AuthController extends ApiController
             'name' => $t->name,
             'logo_url' => $t->logo_url,
             'attendance_enforce_radius' => (bool) $t->attendance_enforce_radius,
+            'hris_app_url' => $t->hris_app_url,
         ] : null;
     }
 

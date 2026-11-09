@@ -63,6 +63,8 @@
             <x-mary-toggle label="Absensi wajib dalam radius Lokasi Kerja" wire:model="attendance_enforce_radius" />
             <x-mary-toggle label="Blokir lokasi palsu (fake GPS)" wire:model="block_mock_location" />
             <x-mary-toggle label="Kunci akun ke satu perangkat" wire:model="bind_device" />
+            <x-mary-input label="Tautan aplikasi HRIS (pengajuan)" wire:model="hris_app_url" hint="Link Play Store / App Link / web HRIS. Dibuka dari menu Pengajuan di mobile CRM." />
+            <x-mary-input type="number" label="Alarm pengingat absen (menit sebelum jam masuk/pulang)" wire:model="attendance_reminder_minutes" hint="0 = tanpa alarm" />
 
             @if(! $editingId)
                 <hr class="my-2">

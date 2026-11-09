@@ -50,6 +50,13 @@ class TenantProvisioner
             $this->cloneRoles($templateId, $tenant->id);
         });
 
+        CurrentTenant::runAs($tenant->id, function () {
+            \VentureDrake\LaravelCrm\Models\Shift::create([
+                'name' => 'Shift Reguler', 'start_time' => '08:00', 'end_time' => '17:00',
+                'working_days' => [1, 2, 3, 4, 5], 'is_default' => true, 'is_active' => true,
+            ]);
+        });
+
         $user = null;
 
         if ($admin && ! empty($admin['email'])) {

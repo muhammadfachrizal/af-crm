@@ -539,6 +539,10 @@
                     </x-mary-menu-sub>
                 @endif
 
+                @can('view crm deals')
+                    <x-mary-menu-item title="Laporan" icon="fas.chart-pie" link="{{ url(route('laravel-crm.reports.index')) }}" />
+                @endcan
+
                 @canany(['view crm tasks', 'view crm attendances', 'view crm visits', 'view crm activities'])
                     <x-mary-menu-sub
                         title="Daily Work"
@@ -578,6 +582,18 @@
                                 icon="fas.table-list"
                                 link="{{ url(route('laravel-crm.attendance-recap.index')) }}"
                             />
+                            <x-mary-menu-item
+                                title="Hari Libur & Cuti"
+                                icon="fas.calendar-xmark"
+                                link="{{ url(route('laravel-crm.holidays.index')) }}"
+                            />
+                            @can('edit crm settings')
+                                <x-mary-menu-item
+                                    title="Kirim Notifikasi"
+                                    icon="fas.bell"
+                                    link="{{ url(route('laravel-crm.push-notifications.index')) }}"
+                                />
+                            @endcan
                         @endcan
 
                         @can('view crm visits')

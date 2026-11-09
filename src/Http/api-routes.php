@@ -21,6 +21,7 @@ use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\TimezoneController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\UserController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\AttendanceController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\VisitController;
+use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\DeviceTokenController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\WorkLocationController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\TaskController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\ActivityController;
@@ -73,6 +74,14 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team', 'laravel-c
         ->except(['show'])
         ->parameters(['work-locations' => 'id'])
         ->names('laravel-crm.api.v2.work-locations');
+
+    Route::get('attendances/schedule', [AttendanceController::class, 'schedule'])
+        ->name('laravel-crm.api.v2.attendances.schedule');
+
+    Route::post('device-tokens', [DeviceTokenController::class, 'store'])
+        ->name('laravel-crm.api.v2.device-tokens.store');
+    Route::delete('device-tokens', [DeviceTokenController::class, 'destroy'])
+        ->name('laravel-crm.api.v2.device-tokens.destroy');
 
     Route::get('attendances/shift', [AttendanceController::class, 'shift'])
         ->name('laravel-crm.api.v2.attendances.shift');

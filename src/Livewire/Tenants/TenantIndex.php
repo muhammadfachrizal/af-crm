@@ -48,6 +48,10 @@ class TenantIndex extends Component
 
     public bool $bind_device = false;
 
+    public $attendance_reminder_minutes = 15;
+
+    public ?string $hris_app_url = null;
+
     // Admin awal (hanya saat membuat tenant)
     public bool $create_admin = true;
 
@@ -86,7 +90,7 @@ class TenantIndex extends Component
     protected function resetForm(): void
     {
         $this->reset([
-            'editingId', 'name', 'code', 'email', 'phone', 'address', 'starts_at', 'expires_at', 'max_users',
+            'editingId', 'name', 'code', 'email', 'phone', 'address', 'starts_at', 'expires_at', 'max_users', 'hris_app_url',
             'admin_name', 'admin_email', 'admin_password', 'createdInfo',
         ]);
         $this->status = 'active';
@@ -94,6 +98,7 @@ class TenantIndex extends Component
         $this->timezone = 'Asia/Jakarta';
         $this->block_mock_location = true;
         $this->bind_device = false;
+        $this->attendance_reminder_minutes = 15;
         $this->create_admin = true;
         $this->template_id = (int) (Tenant::orderBy('id')->value('id') ?? 1);
         $this->resetValidation();
@@ -125,6 +130,8 @@ class TenantIndex extends Component
         $this->timezone = $t->timezone ?: 'Asia/Jakarta';
         $this->block_mock_location = (bool) $t->block_mock_location;
         $this->bind_device = (bool) $t->bind_device;
+        $this->attendance_reminder_minutes = $t->attendance_reminder_minutes ?? 15;
+        $this->hris_app_url = $t->hris_app_url;
         $this->showForm = true;
     }
 
@@ -139,6 +146,8 @@ class TenantIndex extends Component
             'expires_at' => ['nullable', 'date'],
             'max_users' => ['nullable', 'integer', 'min:1'],
             'timezone' => ['required', 'timezone'],
+            'attendance_reminder_minutes' => ['required', 'integer', 'min:0', 'max:120'],
+            'hris_app_url' => ['nullable', 'string', 'max:500'],
         ];
 
         if (! $this->editingId && $this->create_admin) {
@@ -162,6 +171,8 @@ class TenantIndex extends Component
             'timezone' => $this->timezone,
             'block_mock_location' => $this->block_mock_location,
             'bind_device' => $this->bind_device,
+            'attendance_reminder_minutes' => (int) $this->attendance_reminder_minutes,
+            'hris_app_url' => $this->hris_app_url ?: null,
         ];
 
         if ($this->editingId) {
