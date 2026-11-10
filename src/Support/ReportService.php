@@ -52,10 +52,88 @@ class ReportService
         abort_unless(isset(static::REPORTS[$key]), 404);
 
         $data = static::{'report'.ucfirst($key)}($from->copy()->startOfDay(), $to->copy()->endOfDay(), $userId);
+        $data['charts'] = static::charts($key, $data, $from->copy()->startOfDay(), $to->copy()->endOfDay(), $userId);
         $data['title'] = static::REPORTS[$key][0];
         $data['period'] = $from->format('d M Y').' - '.$to->format('d M Y');
 
         return $data;
+    }
+
+    /** Spesifikasi grafik per laporan (dirender SvgChart). Diturunkan dari data tabel agar angkanya selalu sama. */
+    protected static function charts(string $key, array $data, Carbon $from, Carbon $to, ?int $u): array
+    {
+        $rows = fn (int $i) => $data['sections'][$i]['rows'] ?? [];
+        $col = fn (array $r, int $c) => array_map(fn ($row) => $row[$c] ?? 0, $r);
+        $labels = fn (array $r) => array_map(fn ($row) => (string) $row[0], $r);
+
+        switch ($key) {
+            case 'summary':
+                $val = function (string $label) use ($rows) {
+                    foreach ($rows(0) as $r) {
+                        if ($r[0] === $label) {
+                            return (float) $r[1];
+                        }
+                    }
+
+                    return 0.0;
+                };
+
+                $months = [];
+                $leadsTrend = [];
+                $wonTrend = [];
+                for ($i = 5; $i >= 0; $i--) {
+                    $m = $to->copy()->startOfMonth()->subMonths($i);
+                    $range = [$m->copy()->startOfMonth(), $m->copy()->endOfMonth()];
+                    $months[] = $m->translatedFormat('M y');
+                    $leadsTrend[] = static::owner(Lead::whereBetween('created_at', $range), $u)->count();
+                    $wonTrend[] = static::m(static::owner(Deal::where('closed_status', 'won')->whereBetween('closed_at', $range), $u)->sum('amount'));
+                }
+
+                return [
+                    ['type' => 'donut', 'title' => 'Hasil deal pada periode (menang vs kalah)', 'labels' => ['Menang', 'Kalah'],
+                        'series' => [['name' => 'Deal', 'values' => [$val('Deal menang'), $val('Deal kalah')]]]],
+                    ['type' => 'line', 'title' => 'Tren 6 bulan: lead baru', 'labels' => $months, 'format' => 'int',
+                        'series' => [['name' => 'Lead baru', 'values' => $leadsTrend, 'color' => '#2563eb']]],
+                    ['type' => 'bar', 'title' => 'Tren 6 bulan: nilai deal menang', 'labels' => $months, 'format' => 'money',
+                        'series' => [['name' => 'Nilai menang', 'values' => $wonTrend]]],
+                ];
+
+            case 'funnel':
+                return [
+                    ['type' => 'hbar', 'title' => 'Funnel (jumlah per tahap)', 'labels' => $labels($rows(0)), 'format' => 'int',
+                        'series' => [['name' => 'Jumlah', 'values' => $col($rows(0), 1)]]],
+                    ['type' => 'hbar', 'title' => 'Pipeline terbuka per tahap', 'labels' => $labels($rows(1)), 'format' => 'money',
+                        'series' => [['name' => 'Nilai', 'values' => $col($rows(1), 2)], ['name' => 'Tertimbang', 'values' => $col($rows(1), 4)]]],
+                ];
+
+            case 'forecast':
+                return [['type' => 'bar', 'title' => 'Forecast per bulan perkiraan closing', 'labels' => $labels($rows(0)), 'format' => 'money',
+                    'series' => [['name' => 'Nilai', 'values' => $col($rows(0), 2)], ['name' => 'Tertimbang', 'values' => $col($rows(0), 3)]]]];
+
+            case 'sales':
+                return [
+                    ['type' => 'hbar', 'title' => 'Nilai deal menang vs nilai pipeline per user', 'labels' => $labels($rows(0)), 'format' => 'money',
+                        'series' => [['name' => 'Menang', 'values' => $col($rows(0), 4)], ['name' => 'Pipeline', 'values' => $col($rows(0), 8)]]],
+                    ['type' => 'hbar', 'title' => 'Visit dijadwalkan vs selesai per user', 'labels' => $labels($rows(0)), 'format' => 'int',
+                        'series' => [['name' => 'Dijadwalkan', 'values' => $col($rows(0), 9)], ['name' => 'Selesai', 'values' => $col($rows(0), 10)]]],
+                ];
+
+            case 'sources':
+                return [
+                    ['type' => 'donut', 'title' => 'Komposisi lead per sumber', 'labels' => $labels($rows(0)), 'series' => [['name' => 'Lead', 'values' => $col($rows(0), 1)]]],
+                    ['type' => 'hbar', 'title' => 'Konversi % per sumber', 'labels' => $labels($rows(0)), 'format' => 'percent', 'series' => [['name' => 'Konversi %', 'values' => $col($rows(0), 4)]]],
+                ];
+
+            case 'ar':
+                return [['type' => 'bar', 'title' => 'Piutang berdasarkan umur', 'labels' => $labels($rows(0)), 'format' => 'money',
+                    'series' => [['name' => 'Terutang', 'values' => $col($rows(0), 2), 'colors' => ['#16a34a', '#f59e0b', '#ea580c', '#dc2626', '#7f1d1d']]]]];
+
+            case 'visits':
+                return [['type' => 'bar', 'title' => 'Visit per petugas', 'labels' => $labels($rows(0)), 'format' => 'int',
+                    'series' => [['name' => 'Dijadwalkan', 'values' => $col($rows(0), 1)], ['name' => 'Selesai', 'values' => $col($rows(0), 2)]]]];
+        }
+
+        return [];
     }
 
     protected static function reportSummary(Carbon $from, Carbon $to, ?int $u): array

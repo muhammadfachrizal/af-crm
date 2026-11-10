@@ -17,6 +17,8 @@ class TenantTables
             'work_locations',
             'shifts',
             'device_tokens',
+            'notifications',
+            'teams',
             'holidays',
             'leaves',
             'calls',

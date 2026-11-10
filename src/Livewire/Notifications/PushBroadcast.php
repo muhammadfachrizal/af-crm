@@ -31,19 +31,15 @@ class PushBroadcast extends Component
             'body' => ['required', 'string', 'max:300'],
         ]);
 
-        $query = DeviceToken::query();
+        $userModel = config('auth.providers.users.model');
+        $ids = $this->all ? $userModel::pluck('id')->all() : array_map('intval', $this->userIds);
 
-        if (! $this->all) {
-            $query->whereIn('user_id', $this->userIds ?: [0]);
-        }
+        \VentureDrake\LaravelCrm\Support\Notifier::send($ids, $this->title, $this->body, 'broadcast');
 
-        $sent = FcmService::toTokens($query->pluck('token')->all(), $this->title, $this->body, ['type' => 'broadcast']);
+        $devices = DeviceToken::whereIn('user_id', $ids ?: [0])->count();
+        $this->reset(['title', 'body', 'userIds']);
 
-        $this->reset(['title', 'body']);
-
-        $sent > 0
-            ? $this->success("Notifikasi dikirim ke {$sent} perangkat.")
-            : $this->warning('Tidak ada perangkat yang menerima (belum ada token, atau FCM belum dikonfigurasi).');
+        $this->success(count($ids).' user menerima notifikasi di aplikasi'.($devices && FcmService::enabled() ? " dan push ke {$devices} perangkat." : '.'));
     }
 
     public function render()

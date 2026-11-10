@@ -12,6 +12,11 @@ class AttendanceRecapController extends Controller
         return view('laravel-crm::attendance-recap.index');
     }
 
+    public function notifications()
+    {
+        return view('laravel-crm::notifications.index');
+    }
+
     public function holidays()
     {
         return view('laravel-crm::holidays.index');

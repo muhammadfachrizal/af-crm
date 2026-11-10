@@ -16,6 +16,8 @@
             .no-print, nav, aside, .drawer-side, .navbar { display: none !important; }
             .crm-content { margin: 0 !important; padding: 0 !important; }
             table { font-size: 11px; }
+            .grid { display: block !important; }
+            svg { max-height: 260px; }
         }
     </style>
 
@@ -45,6 +47,16 @@
             <button class="btn btn-sm btn-primary text-white">Tampilkan</button>
             <a href="{{ url(route('laravel-crm.reports.index')) }}" class="btn btn-sm btn-ghost">Semua laporan</a>
         </form>
+
+        @if(! empty($report['charts']))
+            <div class="grid lg:grid-cols-2 gap-4 mb-4">
+                @foreach($report['charts'] as $chart)
+                    <x-mary-card :title="$chart['title']" shadow class="{{ in_array($chart['type'], ['hbar']) && count($chart['labels']) > 8 ? 'lg:col-span-2' : '' }}">
+                        {!! \VentureDrake\LaravelCrm\Support\SvgChart::render($chart) !!}
+                    </x-mary-card>
+                @endforeach
+            </div>
+        @endif
 
         @foreach($report['sections'] as $section)
             <x-mary-card :title="$section['title']" shadow class="mb-4">

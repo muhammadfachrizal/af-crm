@@ -63,6 +63,18 @@
             {{--<x-mary-input icon="o-magnifying-glass" placeholder="Search..." />--}}
             {{--<x-mary-button label="Messages" icon="o-envelope" link="###" class="btn-ghost btn-sm" responsive />
             <x-mary-button label="Notifications" icon="o-bell" link="###" class="btn-ghost btn-sm" responsive />--}}
+            @php
+                $__route = \Illuminate\Support\Facades\Route::currentRouteName();
+                $__exportKey = ($__route && preg_match('/^laravel-crm\.([a-z\-]+)\.index$/', $__route, $__m) && \VentureDrake\LaravelCrm\Support\ExportRegistry::has($__m[1])) ? $__m[1] : null;
+            @endphp
+            @if($__exportKey && auth()->user()->can(\VentureDrake\LaravelCrm\Support\ExportRegistry::all()[$__exportKey]['permission']))
+                <x-mary-dropdown label="Export" icon="o-arrow-down-tray" class="btn-ghost btn-sm" right>
+                    <x-mary-menu-item title="Excel (.xlsx)" icon="o-table-cells" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'xlsx'])) }}" external />
+                    <x-mary-menu-item title="CSV" icon="o-document-text" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'csv'])) }}" external />
+                    <x-mary-menu-item title="Cetak / PDF" icon="o-printer" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'print'])) }}" external />
+                </x-mary-dropdown>
+            @endif
+            <livewire:crm-notification-bell />
             <x-mary-theme-toggle class="btn btn-ghost" />
             @if (class_exists('\Laravel\Jetstream\Jetstream') && Laravel\Jetstream\Jetstream::managesProfilePhotos())
                 <x-mary-avatar :image="auth()->user()->profile_photo_url" alt="{{ Auth::user()->name }}" />

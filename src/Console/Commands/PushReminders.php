@@ -14,6 +14,7 @@ use VentureDrake\LaravelCrm\Models\Tenant;
 use VentureDrake\LaravelCrm\Models\Visit;
 use VentureDrake\LaravelCrm\Support\CurrentTenant;
 use VentureDrake\LaravelCrm\Support\FcmService;
+use VentureDrake\LaravelCrm\Support\Notifier;
 
 /**
  * Dijalankan scheduler tiap menit (lihat LaravelCrmServiceProvider). Per tenant:
@@ -30,10 +31,6 @@ class PushReminders extends Command
 
     public function handle(): int
     {
-        if (! FcmService::enabled()) {
-            return self::SUCCESS;
-        }
-
         foreach (Tenant::where('status', 'active')->get() as $tenant) {
             if (! $tenant->isUsable()) {
                 continue;
@@ -64,7 +61,7 @@ class PushReminders extends Command
             $userId = $task->user_assigned_id ?: $task->user_owner_id;
 
             if ($userId && $this->once("task:{$task->id}:{$task->due_at?->timestamp}")) {
-                FcmService::toUsers([$userId], 'Task segera jatuh tempo', (string) $task->name, ['type' => 'task', 'id' => (string) $task->external_id]);
+                Notifier::send([$userId], 'Task segera jatuh tempo', (string) $task->name, 'task', ['id' => (string) $task->external_id]);
             }
         }
     }
@@ -77,7 +74,7 @@ class PushReminders extends Command
 
         foreach ($visits as $visit) {
             if ($visit->user_id && $this->once("visit:{$visit->id}:{$visit->scheduled_at?->timestamp}")) {
-                FcmService::toUsers([$visit->user_id], 'Visit sebentar lagi', (string) $visit->title, ['type' => 'visit', 'id' => (string) $visit->external_id]);
+                Notifier::send([$visit->user_id], 'Visit sebentar lagi', (string) $visit->title, 'visit', ['id' => (string) $visit->external_id]);
             }
         }
     }
@@ -118,7 +115,7 @@ class PushReminders extends Command
                 ->exists();
 
             if (! $hasIn && $this->once("absen:{$user->id}:{$date}")) {
-                FcmService::toUsers([$user->id], 'Anda belum absen masuk', "Jam masuk {$shift->start_time}. Segera lakukan Check In.", ['type' => 'attendance']);
+                Notifier::send([$user->id], 'Anda belum absen masuk', "Jam masuk {$shift->start_time}. Segera lakukan Check In.", 'attendance');
             }
         }
     }

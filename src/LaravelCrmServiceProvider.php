@@ -532,13 +532,13 @@ class LaravelCrmServiceProvider extends ServiceProvider
         \VentureDrake\LaravelCrm\Models\Task::created(function ($task) {
             $to = $task->user_assigned_id;
             if ($to && $to !== auth()->id()) {
-                dispatch(fn () => \VentureDrake\LaravelCrm\Support\FcmService::toUsers([$to], 'Task baru untuk Anda', (string) $task->name, ['type' => 'task', 'id' => (string) $task->external_id]))->afterResponse();
+                dispatch(fn () => \VentureDrake\LaravelCrm\Support\Notifier::send([$to], 'Task baru untuk Anda', (string) $task->name, 'task', ['id' => (string) $task->external_id]))->afterResponse();
             }
         });
         \VentureDrake\LaravelCrm\Models\Visit::created(function ($visit) {
             $to = $visit->user_id;
             if ($to && $to !== auth()->id()) {
-                dispatch(fn () => \VentureDrake\LaravelCrm\Support\FcmService::toUsers([$to], 'Visit baru ditugaskan', (string) $visit->title, ['type' => 'visit', 'id' => (string) $visit->external_id]))->afterResponse();
+                dispatch(fn () => \VentureDrake\LaravelCrm\Support\Notifier::send([$to], 'Visit baru ditugaskan', (string) $visit->title, 'visit', ['id' => (string) $visit->external_id]))->afterResponse();
             }
         });
 
@@ -923,6 +923,8 @@ class LaravelCrmServiceProvider extends ServiceProvider
         Livewire::component('crm-work-location-index', \VentureDrake\LaravelCrm\Livewire\WorkLocations\WorkLocationIndex::class);
         Livewire::component('crm-holiday-leave-index', \VentureDrake\LaravelCrm\Livewire\Holidays\HolidayLeaveIndex::class);
         Livewire::component('crm-push-broadcast', \VentureDrake\LaravelCrm\Livewire\Notifications\PushBroadcast::class);
+        Livewire::component('crm-notification-bell', \VentureDrake\LaravelCrm\Livewire\Notifications\NotificationBell::class);
+        Livewire::component('crm-notification-list', \VentureDrake\LaravelCrm\Livewire\Notifications\NotificationList::class);
         Livewire::component('crm-shift-index', \VentureDrake\LaravelCrm\Livewire\Shifts\ShiftIndex::class);
         Livewire::component('crm-attendance-recap', \VentureDrake\LaravelCrm\Livewire\Attendances\AttendanceRecap::class);
         Livewire::component('crm-work-location-form', \VentureDrake\LaravelCrm\Livewire\WorkLocations\WorkLocationForm::class);

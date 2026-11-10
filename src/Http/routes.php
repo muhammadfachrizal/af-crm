@@ -59,6 +59,12 @@ Route::group(['prefix' => 'work-locations', 'middleware' => 'auth.laravel-crm'],
         ->middleware(['can:viewAny,VentureDrake\LaravelCrm\Models\Attendance']);
 });
 
+/* Export data per halaman */
+
+Route::get('export/{resource}/{format}', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\ExportController@download')
+    ->middleware('auth.laravel-crm')
+    ->name('laravel-crm.export');
+
 /* Laporan */
 
 Route::group(['prefix' => 'reports', 'middleware' => ['auth.laravel-crm', 'can:viewAny,VentureDrake\\LaravelCrm\\Models\\Deal']], function () {
@@ -77,6 +83,8 @@ Route::group(['middleware' => ['auth.laravel-crm', 'can:viewAny,VentureDrake\\La
         ->name('laravel-crm.attendance-recap.index');
     Route::get('attendance-recap/export', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@export')
         ->name('laravel-crm.attendance-recap.export');
+    Route::get('notifications', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@notifications')
+        ->name('laravel-crm.notifications.index');
     Route::get('holidays', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@holidays')
         ->name('laravel-crm.holidays.index');
     Route::get('push-notifications', 'VentureDrake\\LaravelCrm\\Http\\Controllers\\AttendanceRecapController@push')
