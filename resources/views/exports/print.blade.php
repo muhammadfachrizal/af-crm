@@ -26,6 +26,7 @@
     <div class="meta">
         {{ $company }} &middot; Dicetak {{ now($tz)->format('d M Y H:i') }} oleh {{ $printedBy }}
         @if($period) &middot; Periode {{ $period }} @endif
+        @if($filtered) &middot; sesuai filter di layar @endif
         &middot; {{ count($rows) }} baris
     </div>
 

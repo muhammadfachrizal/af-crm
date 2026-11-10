@@ -242,7 +242,7 @@ class ExportRegistry
     /**
      * @return array{title: string, columns: array, rows: \Generator}
      */
-    public static function dataset(string $key, ?string $from = null, ?string $to = null, int $limit = 50000): array
+    public static function dataset(string $key, ?string $from = null, ?string $to = null, int $limit = 50000, ?callable $pages = null): array
     {
         $def = static::all()[$key];
         $tz = AttendanceRecapService::timezone();
@@ -265,16 +265,12 @@ class ExportRegistry
 
         $columns = array_map(fn ($c) => ['label' => $c[0], 'type' => $c[1]], $def['columns']);
 
-        $rows = (function () use ($q, $def, $tz, $limit) {
+        $loader = function (iterable $chunks) use ($def, $tz, $limit, $with) {
             $n = 0;
-            $page = 1;
 
-            // Paging 500 baris agar eager load tetap berlaku (cursor() akan N+1 per baris).
-            while (true) {
-                $chunk = (clone $q)->forPage($page++, 500)->get();
-
-                if ($chunk->isEmpty()) {
-                    return;
+            foreach ($chunks as $chunk) {
+                if ($with && method_exists($chunk, 'load')) {
+                    $chunk->load($with); // eager load agar tidak N+1
                 }
 
                 foreach ($chunk as $m) {
@@ -285,7 +281,20 @@ class ExportRegistry
                     }
                 }
             }
-        })();
+        };
+
+        if ($pages) {
+            // Sumber = query milik komponen daftar di layar (filter, pencarian, urutan, & aturan hak akses sama persis).
+            $rows = $loader($pages());
+        } else {
+            $rows = $loader((function () use ($q) {
+                $page = 1;
+
+                while (($chunk = (clone $q)->forPage($page++, 500)->get())->isNotEmpty()) {
+                    yield $chunk;
+                }
+            })());
+        }
 
         return ['title' => $def['title'], 'columns' => $columns, 'rows' => $rows];
     }
