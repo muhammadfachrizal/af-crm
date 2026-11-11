@@ -68,26 +68,11 @@
                 $__exportKey = ($__route && preg_match('/^laravel-crm\.([a-z\-]+)\.index$/', $__route, $__m) && \VentureDrake\LaravelCrm\Support\ExportRegistry::has($__m[1])) ? $__m[1] : null;
             @endphp
             @if($__exportKey && auth()->user()->can(\VentureDrake\LaravelCrm\Support\ExportRegistry::all()[$__exportKey]['permission']))
-                <div class="dropdown dropdown-end">
-                    <label tabindex="0" class="btn btn-ghost btn-sm" title="Export sesuai filter yang sedang dipakai">
-                        <x-mary-icon name="o-arrow-down-tray" class="w-4 h-4" /> Export
-                    </label>
-                    <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow">
-                        <li><a data-export href="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'xlsx'])) }}" target="_blank">Excel (.xlsx)</a></li>
-                        <li><a data-export href="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'csv'])) }}" target="_blank">CSV</a></li>
-                        <li><a data-export href="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'print'])) }}" target="_blank">Cetak / PDF</a></li>
-                    </ul>
-                </div>
-                <script>
-                    // Bawa filter/pencarian/urutan yang sedang aktif di halaman (Livewire menyimpannya di URL).
-                    document.addEventListener('click', function (e) {
-                        var a = e.target.closest('a[data-export]');
-                        if (!a) return;
-                        var u = new URL(a.href);
-                        u.search = window.location.search;
-                        a.href = u.toString();
-                    }, true);
-                </script>
+                <x-mary-dropdown label="Export" icon="o-arrow-down-tray" class="btn-ghost btn-sm" right>
+                    <x-mary-menu-item title="Excel (.xlsx)" icon="o-table-cells" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'xlsx'])) }}" external />
+                    <x-mary-menu-item title="CSV" icon="o-document-text" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'csv'])) }}" external />
+                    <x-mary-menu-item title="Cetak / PDF" icon="o-printer" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'print'])) }}" external />
+                </x-mary-dropdown>
             @endif
             <livewire:crm-notification-bell />
             <x-mary-theme-toggle class="btn btn-ghost" />
