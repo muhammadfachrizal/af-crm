@@ -23,6 +23,7 @@ use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\AttendanceController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\VisitController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\DeviceTokenController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\NotificationController;
+use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\SalesController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\WorkLocationController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\TaskController;
 use VentureDrake\LaravelCrm\Http\Controllers\Api\V2\ActivityController;
@@ -78,6 +79,13 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team', 'laravel-c
 
     Route::get('attendances/schedule', [AttendanceController::class, 'schedule'])
         ->name('laravel-crm.api.v2.attendances.schedule');
+
+    Route::get('sales/products', [SalesController::class, 'lookup'])->name('laravel-crm.api.v2.sales.products');
+    Route::post('sales', [SalesController::class, 'store'])->name('laravel-crm.api.v2.sales.store');
+    Route::get('sales/documents/{type}/{id}/pdf', [SalesController::class, 'pdf'])
+        ->whereIn('type', ['quote', 'order', 'invoice'])->name('laravel-crm.api.v2.sales.pdf');
+    Route::get('sales/documents/{type}/{id}/share', [SalesController::class, 'share'])
+        ->whereIn('type', ['quote', 'order', 'invoice'])->name('laravel-crm.api.v2.sales.share');
 
     Route::get('notifications', [NotificationController::class, 'index'])
         ->name('laravel-crm.api.v2.notifications.index');

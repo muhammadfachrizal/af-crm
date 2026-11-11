@@ -209,17 +209,31 @@ class OrderController extends ApiController
             ], 422);
         }
 
+        $order->load('orderProducts');
+
+        // Salin item produk order (harga & jumlah sama) supaya invoice tidak kosong.
+        $products = $order->orderProducts->map(fn ($op) => [
+            'id' => $op->product_id,
+            'product_id' => $op->product_id,
+            'order_product_id' => $op->id,
+            'quantity' => $op->quantity,
+            'unit_price' => $op->price !== null ? $op->price / 100 : 0,
+            'amount' => $op->amount !== null ? $op->amount / 100 : 0,
+            'comments' => $op->comments,
+        ])->all();
+
         $invoiceRequest = (object) [
             'order_id' => $order->id,
             'reference' => $order->reference,
-            'issue_date' => null,
-            'due_date' => null,
+            'issue_date' => now()->toIso8601String(),
+            'due_date' => now()->addDays(14)->toIso8601String(),
             'currency' => $order->currency,
             'terms' => null,
-            'sub_total' => null,
-            'tax' => null,
-            'total' => null,
+            'sub_total' => $order->subtotal !== null ? $order->subtotal / 100 : null,
+            'tax' => $order->tax !== null ? $order->tax / 100 : null,
+            'total' => $order->total !== null ? $order->total / 100 : null,
             'user_owner_id' => $order->user_owner_id ?? auth()->id(),
+            'products' => $products,
         ];
 
         $invoice = app(\VentureDrake\LaravelCrm\Services\InvoiceService::class)->create(
@@ -227,6 +241,11 @@ class OrderController extends ApiController
             $order->person,
             $order->organization
         );
+
+        $invoice->update([
+            'amount_due' => $order->total !== null ? $order->total / 100 : 0,
+            'amount_paid' => 0,
+        ]);
 
         $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
 
