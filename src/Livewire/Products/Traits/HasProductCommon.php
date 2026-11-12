@@ -103,4 +103,9 @@ trait HasProductCommon
             $this->tax_rate = number_format(app('laravel-crm.settings')->get('tax_rate', 0), 2);
         }
     }
+    
+    public function updatedUnitPrice($value): void
+    {
+        $this->unit_price = str_replace(',', '', $value);
+    }
 }
