@@ -73,6 +73,53 @@
                     <x-mary-menu-item title="CSV" icon="o-document-text" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'csv'])) }}" external />
                     <x-mary-menu-item title="Cetak / PDF" icon="o-printer" link="{{ url(route('laravel-crm.export', ['resource' => $__exportKey, 'format' => 'print'])) }}" external />
                 </x-mary-dropdown>
+                <script>
+                    // Saat link Export diklik, ambil filter/pencarian/urutan yang SEDANG aktif di komponen Livewire
+                    // (tidak harus ada di URL) lalu tambahkan ke link export.
+                    (function () {
+                        if (window.__crmExportBound) return;
+                        window.__crmExportBound = true;
+
+                        var SKIP = ['layout', 'showFilters', 'page', 'paginators', 'perPage'];
+
+                        function put(params, key, val) {
+                            if (val === null || val === undefined || val === '' || typeof val === 'boolean') return;
+                            if (Array.isArray(val)) {
+                                val.forEach(function (v) {
+                                    if (v !== null && v !== '' && typeof v !== 'object') params.append(key + '[]', v);
+                                });
+                                return;
+                            }
+                            if (typeof val === 'object') {
+                                Object.keys(val).forEach(function (k) { put(params, key + '[' + k + ']', val[k]); });
+                                return;
+                            }
+                            params.set(key, val);
+                        }
+
+                        document.addEventListener('click', function (e) {
+                            var a = e.target.closest('a[href*="/export/"]');
+                            if (!a) return;
+
+                            var url = new URL(a.href, window.location.origin);
+                            var params = new URLSearchParams(window.location.search);
+
+                            try {
+                                if (window.Livewire && Livewire.all) {
+                                    Livewire.all().forEach(function (c) {
+                                        var data = c.ephemeral || c.canonical || {};
+                                        Object.keys(data).forEach(function (k) {
+                                            if (SKIP.indexOf(k) === -1) put(params, k, data[k]);
+                                        });
+                                    });
+                                }
+                            } catch (err) { /* abaikan: tetap pakai query URL */ }
+
+                            url.search = params.toString();
+                            a.href = url.toString();
+                        }, true);
+                    })();
+                </script>
             @endif
             <livewire:crm-notification-bell />
             <x-mary-theme-toggle class="btn btn-ghost" />

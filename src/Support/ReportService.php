@@ -30,6 +30,9 @@ class ReportService
         'sources' => ['Sumber Lead', 'Lead dan konversi per sumber'],
         'ar' => ['Piutang (Aging)', 'Invoice belum lunas berdasarkan umur jatuh tempo'],
         'visits' => ['Laporan Visit', 'Rekap kunjungan per petugas dan detailnya'],
+        'salesdaily' => ['Penjualan Harian', 'Invoice per hari: transaksi, total, lunas, dan belum lunas'],
+        'cashier' => ['Penjualan per Petugas & Metode', 'Per SPG/sales dan metode pembayaran (Tunai, Transfer, QRIS, Kartu)'],
+        'topproducts' => ['Produk Terlaris', 'Produk yang paling banyak terjual pada periode'],
     ];
 
     protected static function m($v): float
@@ -128,6 +131,25 @@ class ReportService
                 return [['type' => 'bar', 'title' => 'Piutang berdasarkan umur', 'labels' => $labels($rows(0)), 'format' => 'money',
                     'series' => [['name' => 'Terutang', 'values' => $col($rows(0), 2), 'colors' => ['#16a34a', '#f59e0b', '#ea580c', '#dc2626', '#7f1d1d']]]]];
 
+            case 'salesdaily':
+                return [
+                    ['type' => 'bar', 'title' => 'Total penjualan per hari', 'labels' => array_map(fn ($r) => $r[0], $rows(0)), 'format' => 'money',
+                        'series' => [['name' => 'Total', 'values' => $col($rows(0), 2)], ['name' => 'Lunas', 'values' => $col($rows(0), 4), 'color' => '#16a34a']]],
+                ];
+
+            case 'cashier':
+                return [
+                    ['type' => 'hbar', 'title' => 'Total penjualan per petugas', 'labels' => $labels($rows(0)), 'format' => 'money',
+                        'series' => [['name' => 'Total', 'values' => $col($rows(0), 2)], ['name' => 'Lunas', 'values' => $col($rows(0), 4), 'color' => '#16a34a']]],
+                    ['type' => 'donut', 'title' => 'Komposisi metode pembayaran (nilai)', 'labels' => $labels($rows(1)), 'series' => [['name' => 'Nilai', 'values' => $col($rows(1), 2)]]],
+                ];
+
+            case 'topproducts':
+                $top = array_slice($rows(0), 0, 10);
+
+                return [['type' => 'hbar', 'title' => '10 produk terlaris (jumlah)', 'labels' => array_map(fn ($r) => (string) $r[1], $top), 'format' => 'int',
+                    'series' => [['name' => 'Jumlah', 'values' => array_map(fn ($r) => $r[2], $top)]]]];
+
             case 'visits':
                 return [['type' => 'bar', 'title' => 'Visit per petugas', 'labels' => $labels($rows(0)), 'format' => 'int',
                     'series' => [['name' => 'Dijadwalkan', 'values' => $col($rows(0), 1)], ['name' => 'Selesai', 'values' => $col($rows(0), 2)]]]];
@@ -135,6 +157,107 @@ class ReportService
 
         return [];
     }
+
+    protected static function invoicesIn(Carbon $from, Carbon $to, ?int $u)
+    {
+        return static::owner(Invoice::whereBetween('created_at', [$from, $to]), $u);
+    }
+
+    protected static function reportSalesdaily(Carbon $from, Carbon $to, ?int $u): array
+    {
+        $tz = AttendanceRecapService::timezone();
+        $days = static::invoicesIn($from, $to, $u)->get()->groupBy(fn ($i) => $i->created_at->copy()->setTimezone($tz)->toDateString());
+
+        $rows = [];
+        for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+            $g = $days->get($d->toDateString(), collect());
+            $paid = $g->whereNotNull('fully_paid_at');
+            $rows[] = [
+                $d->translatedFormat('D, d M Y'),
+                $g->count(),
+                static::m($g->sum('total')),
+                $paid->count(),
+                static::m($paid->sum('total')),
+                static::m($g->whereNull('fully_paid_at')->sum('amount_due')),
+            ];
+        }
+
+        return ['sections' => [['title' => 'Per hari', 'columns' => [
+            ['label' => 'Tanggal', 'type' => 'text'], ['label' => 'Transaksi', 'type' => 'int'], ['label' => 'Total', 'type' => 'money'],
+            ['label' => 'Lunas (x)', 'type' => 'int'], ['label' => 'Lunas (nilai)', 'type' => 'money'], ['label' => 'Belum lunas (sisa)', 'type' => 'money'],
+        ], 'rows' => $rows]]];
+    }
+
+    protected static function reportCashier(Carbon $from, Carbon $to, ?int $u): array
+    {
+        $inv = static::invoicesIn($from, $to, $u)->with('ownerUser')->get();
+
+        $perUser = [];
+        foreach ($inv->groupBy('user_owner_id') as $group) {
+            $paid = $group->whereNotNull('fully_paid_at');
+            $perUser[] = [
+                optional($group->first()->ownerUser)->name ?? '-', $group->count(), static::m($group->sum('total')),
+                $paid->count(), static::m($paid->sum('total')), static::m($group->whereNull('fully_paid_at')->sum('amount_due')),
+            ];
+        }
+        usort($perUser, fn ($a, $b) => $b[2] <=> $a[2]);
+
+        $perMethod = [];
+        foreach ($inv->whereNotNull('fully_paid_at')->groupBy(fn ($i) => $i->payment_method ?: 'Lainnya') as $method => $group) {
+            $perMethod[] = [$method, $group->count(), static::m($group->sum('total'))];
+        }
+        usort($perMethod, fn ($a, $b) => $b[2] <=> $a[2]);
+
+        // petugas x metode
+        $matrix = [];
+        foreach ($inv->whereNotNull('fully_paid_at')->groupBy('user_owner_id') as $group) {
+            $row = [optional($group->first()->ownerUser)->name ?? '-'];
+            foreach (['Tunai', 'Transfer', 'QRIS', 'Kartu'] as $m) {
+                $row[] = static::m($group->filter(fn ($i) => ($i->payment_method ?: 'Lainnya') === $m)->sum('total'));
+            }
+            $row[] = static::m($group->filter(fn ($i) => ! in_array($i->payment_method, ['Tunai', 'Transfer', 'QRIS', 'Kartu']))->sum('total'));
+            $matrix[] = $row;
+        }
+
+        return ['sections' => [
+            ['title' => 'Per petugas', 'columns' => [
+                ['label' => 'Petugas', 'type' => 'text'], ['label' => 'Transaksi', 'type' => 'int'], ['label' => 'Total', 'type' => 'money'],
+                ['label' => 'Lunas (x)', 'type' => 'int'], ['label' => 'Lunas (nilai)', 'type' => 'money'], ['label' => 'Belum lunas (sisa)', 'type' => 'money'],
+            ], 'rows' => $perUser],
+            ['title' => 'Per metode pembayaran (invoice lunas)', 'columns' => [
+                ['label' => 'Metode', 'type' => 'text'], ['label' => 'Transaksi', 'type' => 'int'], ['label' => 'Total', 'type' => 'money'],
+            ], 'rows' => $perMethod],
+            ['title' => 'Setoran per petugas (invoice lunas)', 'columns' => [
+                ['label' => 'Petugas', 'type' => 'text'], ['label' => 'Tunai', 'type' => 'money'], ['label' => 'Transfer', 'type' => 'money'],
+                ['label' => 'QRIS', 'type' => 'money'], ['label' => 'Kartu', 'type' => 'money'], ['label' => 'Lainnya', 'type' => 'money'],
+            ], 'rows' => $matrix],
+        ]];
+    }
+
+    protected static function reportTopproducts(Carbon $from, Carbon $to, ?int $u): array
+    {
+        $prefix = config('laravel-crm.db_table_prefix', 'crm_');
+        $tenant = CurrentTenant::id();
+
+        $q = \Illuminate\Support\Facades\DB::table($prefix.'invoice_lines as l')
+            ->join($prefix.'invoices as i', 'i.id', '=', 'l.invoice_id')
+            ->leftJoin($prefix.'products as p', 'p.id', '=', 'l.product_id')
+            ->whereBetween('i.created_at', [$from, $to])
+            ->whereNull('i.deleted_at')
+            ->when($tenant, fn ($w) => $w->where('i.tenant_id', $tenant))
+            ->when($u, fn ($w) => $w->where('i.user_owner_id', $u))
+            ->groupBy('l.product_id', 'p.name', 'p.code')
+            ->selectRaw('p.code as code, p.name as name, sum(l.quantity) as qty, sum(l.amount) as amount, count(distinct i.id) as trx')
+            ->orderByDesc('qty')->limit(50)->get();
+
+        $rows = $q->map(fn ($r) => [$r->code ?: '-', $r->name ?: '(produk dihapus)', (float) $r->qty, (int) $r->trx, static::m($r->amount)])->all();
+
+        return ['sections' => [['title' => '50 produk terlaris (urut jumlah terjual)', 'columns' => [
+            ['label' => 'Kode', 'type' => 'text'], ['label' => 'Produk', 'type' => 'text'], ['label' => 'Jumlah terjual', 'type' => 'int'],
+            ['label' => 'Jumlah transaksi', 'type' => 'int'], ['label' => 'Nilai', 'type' => 'money'],
+        ], 'rows' => $rows]]];
+    }
+
 
     protected static function reportSummary(Carbon $from, Carbon $to, ?int $u): array
     {

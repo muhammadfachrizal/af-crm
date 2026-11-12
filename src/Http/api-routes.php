@@ -81,6 +81,7 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team', 'laravel-c
         ->name('laravel-crm.api.v2.attendances.schedule');
 
     Route::get('sales/products', [SalesController::class, 'lookup'])->name('laravel-crm.api.v2.sales.products');
+    Route::get('sales/summary', [SalesController::class, 'summary'])->name('laravel-crm.api.v2.sales.summary');
     Route::post('sales', [SalesController::class, 'store'])->name('laravel-crm.api.v2.sales.store');
     Route::get('sales/documents/{type}/{id}/pdf', [SalesController::class, 'pdf'])
         ->whereIn('type', ['quote', 'order', 'invoice'])->name('laravel-crm.api.v2.sales.pdf');
@@ -94,6 +95,8 @@ Route::middleware(['auth:sanctum', 'crm-api', 'laravel-crm.api.team', 'laravel-c
     Route::post('notifications/{id}/read', [NotificationController::class, 'read'])
         ->name('laravel-crm.api.v2.notifications.read');
 
+    Route::get('device-tokens/status', [DeviceTokenController::class, 'status'])
+        ->name('laravel-crm.api.v2.device-tokens.status');
     Route::post('device-tokens', [DeviceTokenController::class, 'store'])
         ->name('laravel-crm.api.v2.device-tokens.store');
     Route::delete('device-tokens', [DeviceTokenController::class, 'destroy'])

@@ -242,10 +242,10 @@ class OrderController extends ApiController
             $order->organization
         );
 
-        $invoice->update([
+        $invoice->forceFill([
             'amount_due' => $order->total !== null ? $order->total / 100 : 0,
             'amount_paid' => 0,
-        ]);
+        ])->save();
 
         $invoice->refresh()->load(['ownerUser', 'person', 'organization', 'labels', 'invoiceLines.product', 'order']);
 

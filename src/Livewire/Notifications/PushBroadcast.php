@@ -42,6 +42,24 @@ class PushBroadcast extends Component
         $this->success(count($ids).' user menerima notifikasi di aplikasi'.($devices && FcmService::enabled() ? " dan push ke {$devices} perangkat." : '.'));
     }
 
+    public function testMe(): void
+    {
+        $mine = DeviceToken::where('user_id', auth()->id())->count();
+
+        if ($mine === 0) {
+            $this->warning('Akun Anda belum punya perangkat terdaftar. Login di aplikasi mobile lalu buka Profil > Pengaturan > Status push.');
+
+            return;
+        }
+
+        FcmService::$lastError = null;
+        $sent = FcmService::toUsers([auth()->id()], 'Tes notifikasi', 'Jika ini muncul di HP, push FCM sudah berfungsi.', ['type' => 'test']);
+
+        $sent > 0
+            ? $this->success("Terkirim ke {$sent} perangkat Anda.")
+            : $this->error(FcmService::$lastError ?: 'Tidak terkirim. Lihat storage/logs/laravel.log.');
+    }
+
     public function render()
     {
         $userModel = config('auth.providers.users.model');
@@ -51,6 +69,9 @@ class PushBroadcast extends Component
             'users' => $userModel::orderBy('name')->get(['id', 'name']),
             'counts' => $counts,
             'fcmReady' => FcmService::enabled(),
+            'diag' => FcmService::diagnose(),
+            'myDevices' => DeviceToken::where('user_id', auth()->id())->count(),
+            'allDevices' => DeviceToken::count(),
         ]);
     }
 }

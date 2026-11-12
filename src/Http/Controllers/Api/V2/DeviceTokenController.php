@@ -41,4 +41,16 @@ class DeviceTokenController extends ApiController
 
         return response()->noContent();
     }
+
+    /** Dipakai halaman Pengaturan di mobile untuk mendiagnosa push: token terdaftar? FCM server siap? */
+    public function status(Request $request)
+    {
+        $diag = \VentureDrake\LaravelCrm\Support\FcmService::diagnose();
+
+        return response()->json(['data' => [
+            'device_count' => DeviceToken::where('user_id', $request->user()->id)->count(),
+            'server_ready' => $diag['ok'],
+            'server_message' => $diag['message'],
+        ]]);
+    }
 }

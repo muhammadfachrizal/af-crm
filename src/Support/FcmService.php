@@ -16,6 +16,9 @@ use VentureDrake\LaravelCrm\Models\DeviceToken;
  */
 class FcmService
 {
+    /** Pesan error terakhir (untuk ditampilkan di halaman diagnosa). */
+    public static ?string $lastError = null;
+
     protected static function credentials(): ?array
     {
         $path = config('laravel-crm.fcm.credentials');
@@ -27,12 +30,42 @@ class FcmService
         $full = str_starts_with($path, '/') || preg_match('/^[A-Za-z]:[\\\\\/]/', $path) ? $path : base_path($path);
 
         if (! is_file($full)) {
+            static::$lastError = 'File service account tidak ditemukan: '.$full;
             Log::warning('FCM: file service account tidak ditemukan: '.$full);
 
             return null;
         }
 
         return json_decode(file_get_contents($full), true) ?: null;
+    }
+
+    /** Cek konfigurasi: file ada, project_id, dan access token Google bisa diambil. */
+    public static function diagnose(): array
+    {
+        $path = config('laravel-crm.fcm.credentials');
+        $cred = static::credentials();
+
+        if (! $path) {
+            return ['ok' => false, 'message' => 'LARAVEL_CRM_FCM_CREDENTIALS belum diisi di .env (lalu php artisan config:clear).'];
+        }
+
+        if (! $cred) {
+            return ['ok' => false, 'message' => static::$lastError ?: 'File service account tidak bisa dibaca.'];
+        }
+
+        foreach (['project_id', 'client_email', 'private_key'] as $k) {
+            if (empty($cred[$k])) {
+                return ['ok' => false, 'message' => "File service account tidak valid (kunci {$k} kosong). Pastikan file JSON dari Firebase > Service accounts."];
+            }
+        }
+
+        if (! static::accessToken($cred)) {
+            Cache::forget('laravel-crm:fcm:token');
+
+            return ['ok' => false, 'message' => static::$lastError ?: 'Gagal mengambil access token.'];
+        }
+
+        return ['ok' => true, 'message' => 'Terhubung ke Firebase project '.$cred['project_id'], 'project_id' => $cred['project_id']];
     }
 
     public static function enabled(): bool
@@ -87,6 +120,7 @@ class FcmService
 
         if (! $accessToken) {
             Cache::forget('laravel-crm:fcm:token');
+            static::$lastError = 'Gagal mendapatkan access token Google (cek isi file service account / waktu server).';
             Log::warning('FCM: gagal mendapatkan access token.');
 
             return 0;
@@ -109,6 +143,7 @@ class FcmService
             } elseif (in_array($res->json('error.details.0.errorCode') ?? $res->json('error.status'), ['UNREGISTERED', 'NOT_FOUND', 'INVALID_ARGUMENT'], true)) {
                 DeviceToken::withoutGlobalScopes()->where('token', $token)->delete(); // token basi
             } else {
+                static::$lastError = 'FCM menolak ('.$res->status().'): '.mb_substr($res->body(), 0, 300);
                 Log::warning('FCM: gagal kirim', ['status' => $res->status(), 'body' => $res->body()]);
             }
         }

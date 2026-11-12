@@ -1,11 +1,15 @@
 <div class="crm-content">
     <x-mary-header title="Kirim Notifikasi" subtitle="Push notification ke aplikasi mobile" progress-indicator />
 
-    @unless($fcmReady)
-        <x-mary-alert icon="o-exclamation-triangle" class="alert-warning mb-4">
-            FCM belum dikonfigurasi. Isi <code>LARAVEL_CRM_FCM_CREDENTIALS</code> di .env dengan path file JSON service account Firebase.
-        </x-mary-alert>
-    @endunless
+    <x-mary-card title="Status Push (FCM)" shadow class="mb-4">
+        @if($diag['ok'])
+            <x-mary-alert icon="o-check-circle" class="alert-success mb-3">{{ $diag['message'] }}</x-mary-alert>
+        @else
+            <x-mary-alert icon="o-exclamation-triangle" class="alert-warning mb-3">{{ $diag['message'] }}</x-mary-alert>
+        @endif
+        <div class="text-sm mb-3">Perangkat terdaftar: <strong>{{ $allDevices }}</strong> di tenant ini &middot; milik Anda: <strong>{{ $myDevices }}</strong></div>
+        <x-mary-button label="Kirim tes ke perangkat saya" icon="o-paper-airplane" class="btn-sm" wire:click="testMe" spinner="testMe" />
+    </x-mary-card>
 
     <x-mary-card shadow>
         <x-mary-form wire:submit="send">
