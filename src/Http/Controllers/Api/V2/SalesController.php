@@ -13,6 +13,7 @@ use VentureDrake\LaravelCrm\Models\Quote;
 use VentureDrake\LaravelCrm\Services\InvoiceService;
 use VentureDrake\LaravelCrm\Services\OrderService;
 use VentureDrake\LaravelCrm\Services\QuoteService;
+use VentureDrake\LaravelCrm\Support\CustomerMatcher;
 use VentureDrake\LaravelCrm\Support\SalesDocuments;
 
 /** Penjualan cepat dari mobile: keranjang -> Quote / Order / Invoice / Invoice lunas, plus PDF & berbagi. */
@@ -80,11 +81,11 @@ class SalesController extends ApiController
         } elseif (! empty($c['organization_id'])) {
             $organization = Organization::where('external_id', $c['organization_id'])->firstOrFail();
         } elseif (! empty($c['name'])) {
-            $person = Person::create(['first_name' => $c['name'], 'external_id' => (string) Str::uuid(), 'user_owner_id' => $user->id]);
+            // Pelanggan yang sama (HP / nama) dipakai ulang, bukan dibuat ganda. HP baru ditambahkan kalau belum ada.
+            $person = CustomerMatcher::matchPerson($c['name'], $c['phone'] ?? null)
+                ?? Person::create(['first_name' => $c['name'], 'external_id' => (string) Str::uuid(), 'user_owner_id' => $user->id]);
 
-            if (! empty($c['phone'])) {
-                $person->phones()->create(['external_id' => (string) Str::uuid(), 'number' => $c['phone'], 'type' => 'mobile', 'primary' => 1]);
-            }
+            CustomerMatcher::attachPhone($person, $c['phone'] ?? null);
         } else {
             $person = SalesDocuments::walkInCustomer($user);
         }

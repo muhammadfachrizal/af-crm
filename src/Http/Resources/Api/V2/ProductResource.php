@@ -9,6 +9,25 @@ use VentureDrake\LaravelCrm\Http\Resources\Api\V2\Related\UserBriefResource;
 
 class ProductResource extends JsonResource
 {
+    /** Baris harga utama: yang bertanda default, lalu yang mata uangnya sama dengan pengaturan, lalu yang pertama. */
+    private function defaultPriceRow()
+    {
+        $prices = $this->productPrices;
+        $setting = \VentureDrake\LaravelCrm\Models\Setting::currency();
+        $currency = $setting instanceof \VentureDrake\LaravelCrm\Models\Setting ? $setting->value : null;
+
+        return $prices->firstWhere('default', true)
+            ?? ($currency ? $prices->firstWhere('currency', $currency) : null)
+            ?? $prices->first();
+    }
+
+    private function defaultPriceValue(): ?float
+    {
+        $row = $this->defaultPriceRow();
+
+        return $row && $row->unit_price !== null ? round($row->unit_price / 100, 2) : null;
+    }
+
     public function toArray($request): array
     {
         return [
@@ -26,6 +45,8 @@ class ProductResource extends JsonResource
             'purchase_account' => $this->purchase_account,
             'sales_account' => $this->sales_account,
             'active' => (bool) $this->active,
+            'unit_price' => $this->whenLoaded('productPrices', fn () => $this->defaultPriceValue()),
+            'currency' => $this->whenLoaded('productPrices', fn () => $this->defaultPriceRow()?->currency),
             'prices' => $this->whenLoaded('productPrices', fn () => $this->productPrices->map(fn ($price) => [
                 'currency' => $price->currency,
                 'unit_price' => $price->unit_price !== null ? $price->unit_price / 100 : null,

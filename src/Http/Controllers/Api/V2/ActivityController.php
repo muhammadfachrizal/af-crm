@@ -20,7 +20,6 @@ use VentureDrake\LaravelCrm\Models\Organization;
 use VentureDrake\LaravelCrm\Models\Quote;
 use VentureDrake\LaravelCrm\Models\Order;
 use VentureDrake\LaravelCrm\Models\Invoice;
-use VentureDrake\LaravelCrm\Models\Product;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\ActivityResource;
 
 class ActivityController extends ApiController
@@ -35,11 +34,13 @@ class ActivityController extends ApiController
             ])
             ->latest();
 
-        if ($request->filled('timelineable_type') && $request->filled('timelineable_id')) {
+        if (! ($request->filled('timelineable_type') && $request->filled('timelineable_id'))) {
             $query
-            ->where('causeable_type', $request->user()->getMorphClass())
-            ->where('causeable_id', $request->user()->id);
-        
+                ->where('causeable_type', $request->user()->getMorphClass())
+                ->where('causeable_id', $request->user()->id);
+        }
+
+        if ($request->filled('timelineable_type') && $request->filled('timelineable_id')) {
             $timelineable = $this->resolveTimelineable(
                 $request->timelineable_type,
                 $request->timelineable_id
@@ -50,6 +51,8 @@ class ActivityController extends ApiController
                     'message' => 'Invalid timelineable.',
                 ], 422);
             }
+
+            $this->authorize('view', $timelineable);
 
             $query
                 ->where('timelineable_type', $timelineable->getMorphClass())
@@ -81,7 +84,7 @@ class ActivityController extends ApiController
             'timelineable_type' => [
                 'required',
                 'string',
-                'in:lead,deal,person,organization,product,quote,order,invoice',
+                'in:lead,deal,person,organization,quote,order,invoice',
             ],
             'timelineable_id' => [
                 'required',
@@ -147,7 +150,6 @@ class ActivityController extends ApiController
             'deal' => Deal::class,
             'person' => Person::class,
             'organization' => Organization::class,
-            'product' => Product::class,
             'quote' => Quote::class,
             'order' => Order::class,
             'invoice' => Invoice::class,

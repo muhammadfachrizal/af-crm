@@ -47,7 +47,12 @@ class SalesDocuments
 
     public static function unitPrice(Product $product): float
     {
-        $price = $product->productPrices->firstWhere('default', true) ?? $product->productPrices->first();
+        $setting = Setting::currency();
+        $currency = $setting instanceof Setting ? $setting->value : null;
+
+        $price = $product->productPrices->firstWhere('default', true)
+            ?? ($currency ? $product->productPrices->firstWhere('currency', $currency) : null)
+            ?? $product->productPrices->first();
 
         return $price && $price->unit_price !== null ? round($price->unit_price / 100, 2) : 0.0;
     }
@@ -102,10 +107,33 @@ class SalesDocuments
     /** Pelanggan umum (walk-in) per tenant untuk penjualan tanpa data pelanggan. */
     public static function walkInCustomer($user): Person
     {
-        return Person::firstOrCreate(
-            ['first_name' => 'Pelanggan Umum'],
-            ['external_id' => (string) Str::uuid(), 'user_owner_id' => $user->id]
+        // Penanda tetap per tenant (UUID v5). Dulu dicari lewat first_name, yang tidak pernah cocok kalau
+        // nama terenkripsi atau record lama sempat dihapus -> "Pelanggan Umum" bertambah setiap transaksi.
+        $tenantId = CurrentTenant::id();
+        $externalId = (string) \Ramsey\Uuid\Uuid::uuid5(
+            \Ramsey\Uuid\Uuid::NAMESPACE_OID,
+            'crm-walk-in-customer:'.($tenantId ?? 'default')
         );
+
+        $person = Person::withTrashed()->where('external_id', $externalId)->first();
+
+        if (! $person) {
+            // Pelanggan umum lama (dibuat sebelum penanda ini ada): pakai ulang, jangan buat baru.
+            if ($legacy = CustomerMatcher::findPersonByName(CustomerMatcher::WALK_IN_NAME)) {
+                $legacy->forceFill(['external_id' => $externalId])->saveQuietly();
+                $person = $legacy;
+            }
+        }
+
+        if ($person && $person->trashed()) {
+            $person->restore();
+        }
+
+        return $person ?: Person::create([
+            'external_id' => $externalId,
+            'first_name' => CustomerMatcher::WALK_IN_NAME,
+            'user_owner_id' => $user->id,
+        ]);
     }
 
     public static function resolveModel(string $type, string $externalId)

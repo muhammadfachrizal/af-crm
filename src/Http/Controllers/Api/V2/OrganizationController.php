@@ -9,6 +9,7 @@ use VentureDrake\LaravelCrm\Http\Requests\Api\V2\UpdateOrganizationRequest;
 use VentureDrake\LaravelCrm\Http\Resources\Api\V2\OrganizationResource;
 use VentureDrake\LaravelCrm\Models\Organization;
 use VentureDrake\LaravelCrm\Services\OrganizationService;
+use VentureDrake\LaravelCrm\Support\CustomerMatcher;
 
 class OrganizationController extends ApiController
 {
@@ -56,6 +57,20 @@ class OrganizationController extends ApiController
     {
         $this->authorize('create', Organization::class);
 
+        // Tidak boleh ada organisasi ganda: nama yang sama = pakai data yang ada, perbarui isinya.
+        if ($existing = CustomerMatcher::matchOrganization($request->input('name'))) {
+            if ($request->user()->can('update', $existing)) {
+                $this->organizationService->update($existing, $this->buildPayload($request, $existing));
+            }
+
+            $existing->refresh()->load(['ownerUser', 'labels', 'organizationType', 'industry', 'timezone']);
+
+            return (new OrganizationResource($existing))
+                ->additional(['meta' => ['merged' => true]])
+                ->response()
+                ->setStatusCode(200);
+        }
+
         $payload = $this->buildPayload($request);
 
         $organization = $this->organizationService->create($payload);
@@ -68,6 +83,10 @@ class OrganizationController extends ApiController
     public function update(UpdateOrganizationRequest $request, Organization $organization)
     {
         $this->authorize('update', $organization);
+
+        if ($request->filled('name') && $other = CustomerMatcher::matchOrganization($request->input('name'), $organization->id)) {
+            abort(422, 'Nama organisasi ini sudah dipakai ('.$other->name.').');
+        }
 
         $payload = $this->buildPayload($request, $organization);
 
@@ -106,7 +125,7 @@ class OrganizationController extends ApiController
             'organization_type_id' => $request->input('organization_type_id', $existing?->organization_type_id),
             'industry_id' => $request->input('industry_id', $existing?->industry_id),
             'timezone_id' => $request->input('timezone_id', $existing?->timezone_id),
-            'user_owner_id' => $request->input('user_owner_id', $existing?->user_owner_id),
+            'user_owner_id' => $request->input('user_owner_id', $existing?->user_owner_id ?? $request->user()?->id),
             'phones' => null,
             'emails' => null,
             'addresses' => null,

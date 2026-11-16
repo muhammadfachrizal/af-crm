@@ -3,6 +3,8 @@
 namespace VentureDrake\LaravelCrm\Http\Requests\Api\V2;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use VentureDrake\LaravelCrm\Support\CurrentTenant;
 use VentureDrake\LaravelCrm\Http\Rules\Api\V2\OwnerInCurrentTeam;
 
 class StoreProductRequest extends FormRequest
@@ -18,8 +20,8 @@ class StoreProductRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['nullable', 'string', 'max:255'],
-            'barcode' => ['nullable', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:255', $this->uniqueRule('code', null)],
+            'barcode' => ['nullable', 'string', 'max:255', $this->uniqueRule('barcode', null)],
             'description' => ['nullable', 'string'],
             'unit' => ['nullable', 'string', 'max:50'],
             'unit_price' => ['nullable', 'numeric', 'min:0'],
@@ -31,6 +33,29 @@ class StoreProductRequest extends FormRequest
             'sales_account' => ['nullable', 'string', 'max:255'],
             'active' => ['nullable', 'boolean'],
             'user_owner_id' => ['nullable', 'integer', 'exists:users,id', new OwnerInCurrentTeam],
+        ];
+    }
+
+    /** Kode / barcode tidak boleh kembar dalam satu tenant (barcode kembar membuat scan di kasir salah produk). */
+    private function uniqueRule(string $column, $ignoreId = null)
+    {
+        $rule = Rule::unique(config('laravel-crm.db_table_prefix').'products', $column)
+            ->where(function ($query) {
+                if ($tenantId = CurrentTenant::id()) {
+                    $query->where('tenant_id', $tenantId);
+                }
+
+                $query->whereNull('deleted_at');
+            });
+
+        return $ignoreId ? $rule->ignore($ignoreId) : $rule;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'code.unique' => 'Kode produk ini sudah dipakai produk lain.',
+            'barcode.unique' => 'Barcode ini sudah dipakai produk lain.',
         ];
     }
 }

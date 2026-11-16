@@ -11,6 +11,7 @@ use VentureDrake\LaravelCrm\Models\Label;
 use VentureDrake\LaravelCrm\Models\Organization;
 use VentureDrake\LaravelCrm\Models\Person;
 use VentureDrake\LaravelCrm\Services\PersonService;
+use VentureDrake\LaravelCrm\Support\CustomerMatcher;
 
 class PersonController extends ApiController
 {
@@ -20,7 +21,7 @@ class PersonController extends ApiController
     {
         $this->authorize('viewAny', Person::class);
 
-        $query = Person::query()->with(['ownerUser', 'organization', 'labels']);
+        $query = Person::query()->with(['ownerUser', 'organization', 'labels', 'phones', 'emails']);
 
         if ($request->filled('user_owner_id')) {
             $query->where('user_owner_id', $request->input('user_owner_id'));
@@ -52,7 +53,7 @@ class PersonController extends ApiController
     {
         $this->authorize('view', $person);
 
-        $person->load(['ownerUser', 'organization', 'labels']);
+        $person->load(['ownerUser', 'organization', 'labels', 'phones', 'emails']);
 
         return new PersonResource($person);
     }
@@ -61,13 +62,33 @@ class PersonController extends ApiController
     {
         $this->authorize('create', Person::class);
 
+        // Tidak boleh ada pelanggan ganda: HP / nama yang sama = pakai data yang ada, perbarui isinya.
+        $fullName = trim($request->input('first_name').' '.$request->input('last_name'));
+        $existing = CustomerMatcher::matchPerson($fullName, $request->input('phone'));
+
+        if ($existing) {
+            if ($request->user()->can('update', $existing)) {
+                $this->personService->update($existing, $this->buildPayload($request, $existing));
+                $this->applyDirectFields($existing, $request);
+                $this->applyContactFields($existing, $request, true);
+            }
+
+            $existing->refresh()->load(['ownerUser', 'organization', 'labels', 'phones', 'emails']);
+
+            return (new PersonResource($existing))
+                ->additional(['meta' => ['merged' => true]])
+                ->response()
+                ->setStatusCode(200);
+        }
+
         $payload = $this->buildPayload($request);
 
         $person = $this->personService->create($payload);
 
         $this->applyDirectFields($person, $request);
+        $this->applyContactFields($person, $request);
 
-        $person->refresh()->load(['ownerUser', 'organization', 'labels']);
+        $person->refresh()->load(['ownerUser', 'organization', 'labels', 'phones', 'emails']);
 
         return (new PersonResource($person))->response()->setStatusCode(201);
     }
@@ -76,13 +97,18 @@ class PersonController extends ApiController
     {
         $this->authorize('update', $person);
 
+        if ($request->filled('phone') && $other = CustomerMatcher::findPersonByPhone($request->input('phone'), $person->id)) {
+            abort(422, 'Nomor HP ini sudah dipakai pelanggan lain ('.$other->name.').');
+        }
+
         $payload = $this->buildPayload($request, $person);
 
         $this->personService->update($person, $payload);
 
         $this->applyDirectFields($person, $request);
+        $this->applyContactFields($person, $request);
 
-        $person->refresh()->load(['ownerUser', 'organization', 'labels']);
+        $person->refresh()->load(['ownerUser', 'organization', 'labels', 'phones', 'emails']);
 
         return new PersonResource($person);
     }
@@ -106,11 +132,30 @@ class PersonController extends ApiController
             'gender' => $request->input('gender', $existing?->gender),
             'birthday' => $request->input('birthday', $existing?->birthday?->toDateString()),
             'description' => $request->input('description', $existing?->description),
-            'user_owner_id' => $request->input('user_owner_id', $existing?->user_owner_id),
+            'user_owner_id' => $request->input('user_owner_id', $existing?->user_owner_id ?? $request->user()?->id),
             'phones' => null,
             'emails' => null,
             'addresses' => null,
         ];
+    }
+
+    /**
+     * Phone & email utama. Saat "merge" dari form tambah: HP ditambahkan bila belum ada (tidak menimpa nomor lain),
+     * email hanya diisi kalau pelanggan lama belum punya.
+     */
+    private function applyContactFields(Person $person, FormRequest $request, bool $merging = false): void
+    {
+        if ($request->has('phone')) {
+            $merging
+                ? CustomerMatcher::attachPhone($person, $request->input('phone'))
+                : CustomerMatcher::setPrimaryPhone($person, $request->input('phone'));
+        }
+
+        if ($request->has('email')) {
+            if (! $merging || ! $person->emails()->exists()) {
+                CustomerMatcher::setPrimaryEmail($person, $request->input('email'));
+            }
+        }
     }
 
     private function applyDirectFields(Person $person, FormRequest $request): void

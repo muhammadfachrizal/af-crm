@@ -24,6 +24,8 @@ class StorePersonRequest extends FormRequest
             'gender' => ['nullable', 'string', 'max:50'],
             'birthday' => ['nullable', 'date'],
             'description' => ['nullable', 'string'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
             'organization_id' => ['nullable', 'string', 'uuid', "exists:{$prefix}organizations,external_id"],
             'user_owner_id' => ['nullable', 'integer', 'exists:users,id', new OwnerInCurrentTeam],
             'labels' => ['nullable', 'array'],

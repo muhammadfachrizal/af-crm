@@ -21,6 +21,8 @@ class PersonResource extends JsonResource
             'gender' => $this->gender,
             'birthday' => $this->birthday?->toIso8601String(),
             'description' => $this->description,
+            'phone' => $this->whenLoaded('phones', fn () => \VentureDrake\LaravelCrm\Support\CustomerMatcher::primaryPhoneNumber($this->resource)),
+            'email' => $this->whenLoaded('emails', fn () => \VentureDrake\LaravelCrm\Support\CustomerMatcher::primaryEmailAddress($this->resource)),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
             'deleted_at' => $this->deleted_at?->toIso8601String(),

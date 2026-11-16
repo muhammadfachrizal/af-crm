@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use VentureDrake\LaravelCrm\Console\Commands\IssueApiToken;
+use VentureDrake\LaravelCrm\Console\Commands\MergeDuplicateCustomers;
 use VentureDrake\LaravelCrm\Console\Commands\TenantAssign;
 use VentureDrake\LaravelCrm\Console\Commands\TenantCreate;
 use VentureDrake\LaravelCrm\Console\LaravelCrmAddressTypes;
@@ -899,6 +900,7 @@ class LaravelCrmServiceProvider extends ServiceProvider
                 \VentureDrake\LaravelCrm\Console\Commands\PushReminders::class,
                 TenantCreate::class,
                 TenantAssign::class,
+                MergeDuplicateCustomers::class,
             ]);
 
         }
